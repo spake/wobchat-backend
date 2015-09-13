@@ -13,8 +13,11 @@ var bambooBuildNumber string
 
 func main() {
     log.Println("Opening DB connection")
-    db, _ := gorm.Open("postgres", "dbname=backend sslmode=disable")
-    db.LogMode(false)
+    db, err := gorm.Open("postgres", "host=/var/run/postgresql dbname=backend sslmode=disable")
+    if err != nil {
+        panic(err)
+    }
+    defer db.Close()
 
     // Create tables and automigrate
     log.Println("Creating/migrating tables")
