@@ -7,12 +7,13 @@ import (
 )
 
 type User struct {
-    ID        string  `gorm:"primary_key"`
+    ID        string     `gorm:"primary_key"`
     Name      string
     FirstName string
     LastName  string
     Email     string
     Picture   string
+    Messages  []Messages `gorm:"polymorphic:MessageRecipient;"`
 }
 
 /*
