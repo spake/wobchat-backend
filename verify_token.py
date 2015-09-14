@@ -4,7 +4,7 @@ import json
 from oauth2client import client, crypt
 import sys
 
-CLIENT_ID = '750357624031-sfnbkqo5q3bta27dr9fmsmhd3l2otj1a.apps.googleusercontent.com'
+CLIENT_ID = '783279836221-m71iri9830ptguifn0apfbsnj22pfeel.apps.googleusercontent.com'
 
 token = sys.argv[1]
 
@@ -17,7 +17,7 @@ try:
         raise crypt.AppIdentityError("Wrong issuer.")
 except crypt.AppIdentityError as e:
     # Invalid token
-    sys.stderr.write('Invalid Token: ' + str(e) + '\n')
+    print 'Invalid Token: ' + str(e)
     sys.exit(1)
 
 print json.dumps(idinfo)
