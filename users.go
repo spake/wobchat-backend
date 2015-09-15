@@ -59,5 +59,6 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
     log.Printf("info: %v\n", info)
 
     b, _ := json.Marshal(resp)
+    w.Header().Set("Access-Control-Allow-Origin", "https://wob.chat")
     io.WriteString(w, string(b))
 }
