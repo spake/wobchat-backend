@@ -1,13 +1,14 @@
 package main
 
 import (
-    "os/exec"
-    "log"
     "encoding/json"
+    "io"
+    "log"
+    "net/http"
 )
 
 type User struct {
-    ID        string  `gorm:"primary_key"`
+    UID       int       `gorm:"primary_key"`
     Name      string
     FirstName string
     LastName  string
@@ -15,47 +16,48 @@ type User struct {
     Picture   string
 }
 
-/*
-    idinfo looks like this when it's returned
+type VerifyRequest struct {
+    Token   string
+}
 
-    {"picture": "<url>", 
-    "aud": "<client id>.apps.googleusercontent.com", 
-    "family_name": "Smith", 
-    "iss": "accounts.google.com", 
-    "email_verified": true, 
-    "name": "Jayden Smith", 
-    "at_hash": "<some hash>", 
-    "given_name": "Jayden", 
-    "exp": <some number>, 
-    "azp": "<client id>.apps.googleusercontent.com", 
-    "iat": <some number>, 
-    "locale": "en", 
-    "email": "jaydensmith@gmail.com", 
-    "sub": "<user id>"}
-*/
+type VerifyResponse struct {
+    OK      bool
+}
 
-func verifyIdToken(token string) *User {
-    verifierCmd := exec.Command("./verify_token.py", token)
-    idinfo, err := verifierCmd.Output()
-    if err != nil {
-        // unable to verify the token
-        log.Println("verify_token.py failed: " + string(idinfo))
-        return nil
+func verifyHandler(w http.ResponseWriter, r *http.Request) {
+    c := newContext(r)
+
+    resp := VerifyResponse{}
+
+    info, ok := func() (GoogleInfo, bool) {
+        info := GoogleInfo{}
+
+        // decode json request
+        decoder := json.NewDecoder(r.Body)
+        var req VerifyRequest
+        err := decoder.Decode(&req)
+        if err != nil {
+            return info, false
+        }
+
+        // verify token using the google JWT stuff, and get their info
+        info, err = verifyIDToken(c, req.Token)
+        if err != nil {
+            return info, false
+        }
+
+        // success!
+        return info, true
+    }();
+
+    resp.OK = ok
+
+    if ok {
+        // TODO: save shit into db
     }
 
-    // extract the json into an untyped map
-    var mapIdinfo map[string]interface{}
-    if err := json.Unmarshal(idinfo, &mapIdinfo); err != nil {
-        panic(err)
-    }
+    log.Printf("info: %v\n", info)
 
-    // turn the map into a user struct
-    return &User{
-        ID: mapIdinfo["sub"].(string),
-        Name: mapIdinfo["name"].(string),
-        FirstName: mapIdinfo["given_name"].(string),
-        LastName: mapIdinfo["family_name"].(string),
-        Email: mapIdinfo["email"].(string),
-        Picture: mapIdinfo["picture"].(string)}
-
+    b, _ := json.Marshal(resp)
+    io.WriteString(w, string(b))
 }

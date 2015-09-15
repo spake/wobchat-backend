@@ -12,6 +12,9 @@ import (
 var bambooBuildNumber string
 
 func main() {
+    log.Println("Creating certificate cache")
+    cache = newMemoryCache()
+
     log.Println("Opening DB connection")
     db, err := gorm.Open("postgres", "host=/var/run/postgresql dbname=backend sslmode=disable")
     if err != nil {
@@ -28,5 +31,6 @@ func main() {
     // Set up HTTP handlers
     log.Println("Starting HTTP server")
     http.HandleFunc("/about", aboutHandler)
+    http.HandleFunc("/verify", verifyHandler)
     http.ListenAndServe("127.0.0.1:8000", nil)
 }
