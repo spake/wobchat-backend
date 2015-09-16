@@ -15,7 +15,6 @@ type User struct {
     LastName  string
     Email     string
     Picture   string
-    Friends   []User  `gorm:"many2many:user_friends;"`
 }
 
 type UserFriend struct {
