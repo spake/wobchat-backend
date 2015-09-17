@@ -28,6 +28,7 @@ import (
     "golang.org/x/net/context"
 )
 
+// Stores info obtained from a Google JWT token
 type GoogleInfo struct {
     ID          string
     DisplayName string
