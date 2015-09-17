@@ -7,8 +7,9 @@ import (
 )
 
 /*
- * Data types
+ * DB data types
  */
+// Represents a user in the database
 type User struct {
     Uid       string    `gorm:"primary_key"`
     Name      string
@@ -16,6 +17,13 @@ type User struct {
     LastName  string
     Email     string
     Picture   string
+}
+
+// Represents one-way friendship in the database
+// Note that two rows are required to represent a reflexive friendship
+type UserFriend struct {
+    UserUid   string    `gorm:"primary_key"`
+    FriendUid string    `gorm:"primary_key"`
 }
 
 type Users []User
@@ -56,11 +64,6 @@ func (users *Users) toPublic() (publicUsers []PublicUser) {
         publicUsers = append(publicUsers, user.toPublic())
     }
     return
-}
-
-type UserFriend struct {
-    UserUid   string    `gorm:"primary_key"`
-    FriendUid string    `gorm:"primary_key"`
 }
 
 /*
