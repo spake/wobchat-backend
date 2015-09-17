@@ -10,8 +10,6 @@ import (
 
 var printQueries = flag.Bool("printqueries", false, "Print all queries run through the database")
 
-var db gorm.DB
-
 func TestMain(m *testing.M) {
     flag.Parse()
     log.Println("Opening DB connection")
@@ -45,7 +43,7 @@ func TestMain(m *testing.M) {
 
 func TestCreatingUsers(t *testing.T) {
     testUser1 := User{
-        Uid:       12345,
+        Uid:       "12345",
         Name:      "Jayden Smith",
         FirstName: "Jayden",
         LastName:  "Smith",
@@ -56,7 +54,7 @@ func TestCreatingUsers(t *testing.T) {
     db.Create(&testUser1)
 
     testUser2 := User{
-        Uid:       12346,
+        Uid:       "12346",
         Name:      "Will Smith",
         FirstName: "Will",
         LastName:  "Smith",
@@ -68,14 +66,14 @@ func TestCreatingUsers(t *testing.T) {
 
     log.Println("Accessing test user 1")
     user1 := User{}
-    db.Where(&User{Uid: 12345}).First(&user1)
+    db.Where(&User{Uid: "12345"}).First(&user1)
     if user1 != testUser1 {
         t.Error("User accessed not the same as user inserted")
     }
 
     log.Println("Accessing test user 2")
     user2 := User{}
-    db.Where(&User{Uid: 12346}).First(&user2)
+    db.Where(&User{Uid: "12346"}).First(&user2)
     if user2 != testUser2 {
         t.Error("User accessed not the same as user inserted")
     }
@@ -83,29 +81,29 @@ func TestCreatingUsers(t *testing.T) {
 
 func TestDeletingUsers(t *testing.T) {
     log.Println("Deleting test user 1")
-    db.Where(&User{Uid: 12345}).Delete(User{})
+    db.Where(&User{Uid: "12345"}).Delete(User{})
 
     log.Println("Accessing test user 1")
     user1 := User{}
-    db.Where(&User{Uid: 12345}).First(&user1)
-    if user1.Uid != 0 {
+    db.Where(&User{Uid: "12345"}).First(&user1)
+    if user1.Uid != "" {
         t.Error("Deleted user still exists")
     }
 
     log.Println("Deleting test user 2")
-    db.Where(&User{Uid: 12345}).Delete(User{})
+    db.Where(&User{Uid: "12345"}).Delete(User{})
 
     log.Println("Accessing test user 2")
     user2 := User{}
-    db.Where(&User{Uid: 12345}).First(&user1)
-    if user2.Uid != 0 {
+    db.Where(&User{Uid: "12345"}).First(&user1)
+    if user2.Uid != "" {
         t.Error("Deleted user still exists")
     }
 }
 
 func TestAddingFriends(t *testing.T) {
     testUser1 := User{
-        Uid:       12345,
+        Uid:       "12345",
         Name:      "Jayden Smith",
         FirstName: "Jayden",
         LastName:  "Smith",
@@ -116,7 +114,7 @@ func TestAddingFriends(t *testing.T) {
     db.Create(&testUser1)
 
     testUser2 := User{
-        Uid:       12346,
+        Uid:       "12346",
         Name:      "Will Smith",
         FirstName: "Will",
         LastName:  "Smith",
@@ -175,7 +173,7 @@ func TestAddingFriends(t *testing.T) {
     }
 
     testUser3 := User{
-        Uid:       12347,
+        Uid:       "12347",
         Name:      "Kanye West",
         FirstName: "Kanye",
         LastName:  "West",

@@ -20,8 +20,12 @@ func main() {
 
     log.Println("Opening DB connection")
     var err error
-    //db, err := gorm.Open("postgres", "host=/var/run/postgresql dbname=backend sslmode=disable")
-    db, err = gorm.Open("postgres", "dbname=backend sslmode=disable")
+
+    db, err := gorm.Open("postgres", "host=/var/run/postgresql dbname=backend sslmode=disable")
+
+    // test configuration: leave uncommented in production
+    //db, err = gorm.Open("postgres", "dbname=backend sslmode=disable")
+
     if err != nil {
         log.Println("Failed to open DB connection")
         panic(err)
