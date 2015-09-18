@@ -3,7 +3,6 @@ package main
 import (
     "log"
     "net/http"
-    "github.com/jinzhu/gorm"
 )
 
 /*
@@ -38,13 +37,13 @@ type PublicUser struct {
     Picture     string  `json:"picture"`
 }
 
-func (user *User) getFriends(db gorm.DB) []User {
+func (user *User) getFriends() []User {
     friends := []User{}
     db.Joins("inner join user_friends on friend_uid = uid").Where(&UserFriend{UserUid: user.Uid}).Find(&friends)
     return friends
 }
 
-func (user *User) addFriend(db gorm.DB, friend User) {
+func (user *User) addFriend(friend User) {
     userFriend := UserFriend{UserUid: user.Uid,FriendUid: friend.Uid}
     db.Create(&userFriend)
 }
@@ -69,7 +68,7 @@ func (users *Users) toPublic() (publicUsers []PublicUser) {
 /*
  * DB manipulation functions
  */
-func getUserFromInfo(db gorm.DB, info GoogleInfo) (user User) {
+func getUserFromInfo(info GoogleInfo) (user User) {
     log.Printf("Getting user %v\n", info.ID)
 
     // check if user already exists
@@ -98,14 +97,14 @@ func getUserFromInfo(db gorm.DB, info GoogleInfo) (user User) {
     return user
 }
 
-func getCurrentUser(db gorm.DB, r *http.Request) (user User, ok bool) {
+func getCurrentUser(r *http.Request) (user User, ok bool) {
     info, authenticated := getAuthInfo(r)
     if !authenticated {
         log.Println("Not authenticated")
         return user, false
     }
 
-    user = getUserFromInfo(db, info)
+    user = getUserFromInfo(info)
     return user, true
 }
 
@@ -122,13 +121,13 @@ type ListFriendsResponse struct {
 }
 
 func listFriendsHandler(w http.ResponseWriter, r *http.Request) int {
-    user, ok := getCurrentUser(db, r)
+    user, ok := getCurrentUser(r)
     if !ok {
         return http.StatusUnauthorized
     }
 
     var friends Users
-    friends = user.getFriends(db)
+    friends = user.getFriends()
 
     resp := ListFriendsResponse{
         Friends: friends.toPublic(),

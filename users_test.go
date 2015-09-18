@@ -122,22 +122,22 @@ func TestAddingFriends(t *testing.T) {
         Picture:   "someurl"}
 
     log.Println("Get the friends of test user 1 - should be empty")
-    friends := testUser1.getFriends(db)
+    friends := testUser1.getFriends()
     if len(friends) != 0 {
         t.Error("Friends found for user with no friends")
     }
 
     log.Println("Get the friends of test user 2 - should be empty")
-    friends = testUser2.getFriends(db)
+    friends = testUser2.getFriends()
     if len(friends) != 0 {
         t.Error("Friends found for user with no friends")
     }
 
     log.Println("Add test user 2 as a friend to test user 1")
-    testUser1.addFriend(db, testUser2)
+    testUser1.addFriend(testUser2)
 
     log.Println("Get friends of user 1")
-    friends = testUser1.getFriends(db)
+    friends = testUser1.getFriends()
     if len(friends) != 1 {
         t.Errorf("1 friend should have been found, found %v\n", len(friends))
     }
@@ -146,16 +146,16 @@ func TestAddingFriends(t *testing.T) {
     }
 
     log.Println("Get friends of user 2")
-    friends = testUser2.getFriends(db)
+    friends = testUser2.getFriends()
     if len(friends) != 0 {
         t.Error("Friends found for user with no friends")
     }
 
     log.Println("Add test user 2 as a friend to test user 1")
-    testUser2.addFriend(db, testUser1)
+    testUser2.addFriend(testUser1)
 
     log.Println("Get friends of user 2")
-    friends = testUser2.getFriends(db)
+    friends = testUser2.getFriends()
     if len(friends) != 1 {
         t.Errorf("1 friend should have been found, found %v\n", len(friends))
     }
@@ -164,7 +164,7 @@ func TestAddingFriends(t *testing.T) {
     }
 
     log.Println("Get friends of user 1")
-    friends = testUser1.getFriends(db)
+    friends = testUser1.getFriends()
     if len(friends) != 1 {
         t.Errorf("1 friend should have been found, found %v\n", len(friends))
     }
@@ -184,16 +184,16 @@ func TestAddingFriends(t *testing.T) {
     db.Create(&testUser3)
 
     log.Println("Get friends of user 3")
-    friends = testUser3.getFriends(db)
+    friends = testUser3.getFriends()
     if len(friends) != 0 {
         t.Error("Friends found for user with no friends")
     }
 
     log.Println("Adding test user 3 as friend to test user 1")
-    testUser1.addFriend(db, testUser3)
+    testUser1.addFriend(testUser3)
 
     log.Println("Get friends of user 1")
-    friends = testUser1.getFriends(db)
+    friends = testUser1.getFriends()
     if len(friends) != 2 {
         t.Errorf("2 friends should have been found, found %v\n", len(friends))
     }
@@ -204,7 +204,7 @@ func TestAddingFriends(t *testing.T) {
         t.Errorf("test user 3 not found in friends")
     }
     log.Println("Get friends of user 2")
-    friends = testUser2.getFriends(db)
+    friends = testUser2.getFriends()
     if len(friends) != 1 {
         t.Errorf("1 friend should have been found, found %v\n", len(friends))
     }
@@ -212,16 +212,16 @@ func TestAddingFriends(t *testing.T) {
         t.Errorf("test user 1 not found in friends")
     }
     log.Println("Get friends of user 3")
-    friends = testUser3.getFriends(db)
+    friends = testUser3.getFriends()
     if len(friends) != 0 {
         t.Error("Friends found for user with no friends")
     }
 
     log.Println("Adding test user 2 as friend to test user 3")
-    testUser3.addFriend(db, testUser2)
+    testUser3.addFriend(testUser2)
 
     log.Println("Get friends of user 1")
-    friends = testUser1.getFriends(db)
+    friends = testUser1.getFriends()
     if len(friends) != 2 {
         t.Errorf("2 friends should have been found, found %v\n", len(friends))
     }
@@ -232,7 +232,7 @@ func TestAddingFriends(t *testing.T) {
         t.Errorf("test user 3 not found in friends")
     }
     log.Println("Get friends of user 2")
-    friends = testUser2.getFriends(db)
+    friends = testUser2.getFriends()
     if len(friends) != 1 {
         t.Errorf("1 friend should have been found, found %v\n", len(friends))
     }
@@ -240,7 +240,7 @@ func TestAddingFriends(t *testing.T) {
         t.Errorf("test user 1 not found in friends")
     }
     log.Println("Get friends of user 3")
-    friends = testUser3.getFriends(db)
+    friends = testUser3.getFriends()
     if len(friends) != 1 {
         t.Errorf("1 friend should have been found, found %v\n", len(friends))
     }
@@ -361,7 +361,7 @@ func TestGetUserFromInfo(t *testing.T) {
     }
 
     log.Println("Getting user from before info")
-    gotUserBefore := getUserFromInfo(db, testInfoBefore)
+    gotUserBefore := getUserFromInfo(testInfoBefore)
 
     if gotUserBefore != testUser {
         t.Errorf("User from before info is not the same")
@@ -371,7 +371,7 @@ func TestGetUserFromInfo(t *testing.T) {
     testInfoAfter.Picture = newPictureURL
 
     log.Println("Getting user from after info")
-    gotUserAfter := getUserFromInfo(db, testInfoAfter)
+    gotUserAfter := getUserFromInfo(testInfoAfter)
 
     if gotUserAfter.Picture != newPictureURL {
         t.Errorf("User was not updated from GoogleInfo")
@@ -414,7 +414,7 @@ func TestGetUserFromInfoNew(t *testing.T) {
     }
 
     log.Println("Getting user from info")
-    gotUser := getUserFromInfo(db, testInfo)
+    gotUser := getUserFromInfo(testInfo)
 
     // check all the fields are correct
     if testInfo.ID != gotUser.Uid {
