@@ -1,15 +1,16 @@
 package main
 
 import (
-    "encoding/json"
-    "io"
     "log"
     "net/http"
-    "github.com/jinzhu/gorm"
 )
 
+/*
+ * DB data types
+ */
+// Represents a user in the database
 type User struct {
-    Uid       int       `gorm:"primary_key"`
+    Uid       string    `gorm:"primary_key"`
     Name      string
     FirstName string
     LastName  string
@@ -17,65 +18,121 @@ type User struct {
     Picture   string
 }
 
+// Represents one-way friendship in the database
+// Note that two rows are required to represent a reflexive friendship
 type UserFriend struct {
-    UserUid   int       `gorm:"primary_key"`
-    FriendUid int       `gorm:"primary_key"`
+    UserUid   string    `gorm:"primary_key"`
+    FriendUid string    `gorm:"primary_key"`
 }
 
-type VerifyRequest struct {
-    Token   string
+type Users []User
+
+// Smaller version of User without sensitive/unnecessary info, for sending to
+// third parties, like a user's friends
+type PublicUser struct {
+    Uid         string  `json:"uid"`
+    Name        string  `json:"name"`
+    FirstName   string  `json:"firstName"`
+    LastName    string  `json:"lastName"`
+    Picture     string  `json:"picture"`
 }
 
-type VerifyResponse struct {
-    OK      bool
-}
-
-func verifyHandler(w http.ResponseWriter, r *http.Request) {
-    c := newContext(r)
-
-    resp := VerifyResponse{}
-
-    info, ok := func() (GoogleInfo, bool) {
-        info := GoogleInfo{}
-
-        // decode json request
-        decoder := json.NewDecoder(r.Body)
-        var req VerifyRequest
-        err := decoder.Decode(&req)
-        if err != nil {
-            return info, false
-        }
-
-        // verify token using the google JWT stuff, and get their info
-        info, err = verifyIDToken(c, req.Token)
-        if err != nil {
-            return info, false
-        }
-
-        // success!
-        return info, true
-    }();
-
-    resp.OK = ok
-
-    if ok {
-        // TODO: save shit into db
-    }
-
-    log.Printf("info: %v\n", info)
-
-    b, _ := json.Marshal(resp)
-    w.Header().Set("Access-Control-Allow-Origin", "https://wob.chat")
-    io.WriteString(w, string(b))
-}
-
-func (user *User) getFriends(db gorm.DB) []User {
+func (user *User) getFriends() []User {
     friends := []User{}
     db.Joins("inner join user_friends on friend_uid = uid").Where(&UserFriend{UserUid: user.Uid}).Find(&friends)
     return friends
 }
 
-func (user *User) addFriend(db gorm.DB, friend User) {
+func (user *User) addFriend(friend User) {
     userFriend := UserFriend{UserUid: user.Uid,FriendUid: friend.Uid}
     db.Create(&userFriend)
+}
+
+func (user *User) toPublic() PublicUser {
+    return PublicUser{
+        Uid:        user.Uid,
+        Name:       user.Name,
+        FirstName:  user.FirstName,
+        LastName:   user.LastName,
+        Picture:    user.Picture,
+    }
+}
+
+func (users *Users) toPublic() (publicUsers []PublicUser) {
+    for _, user := range *users {
+        publicUsers = append(publicUsers, user.toPublic())
+    }
+    return
+}
+
+/*
+ * DB manipulation functions
+ */
+func getUserFromInfo(info GoogleInfo) (user User) {
+    log.Printf("Getting user %v\n", info.ID)
+
+    // check if user already exists
+    if err := db.Where("uid = ?", info.ID).First(&user).Error; err != nil {
+        // create user
+        user = User{
+            Uid:        info.ID,
+            Name:       info.DisplayName,
+            FirstName:  info.FirstName,
+            LastName:   info.LastName,
+            Email:      info.Email,
+            Picture:    info.Picture,
+        }
+        db.Create(&user)
+    } else {
+        // update things from the info, in case they've changed
+        user.Uid = info.ID
+        user.Name = info.DisplayName
+        user.FirstName = info.FirstName
+        user.LastName = info.LastName
+        user.Email = info.Email
+        user.Picture = info.Picture
+        db.Save(&user)
+    }
+
+    return user
+}
+
+func getCurrentUser(r *http.Request) (user User, ok bool) {
+    info, authenticated := getAuthInfo(r)
+    if !authenticated {
+        log.Println("Not authenticated")
+        return user, false
+    }
+
+    user = getUserFromInfo(info)
+    return user, true
+}
+
+/*
+ * API endpoints
+ */
+
+/*
+ * /friends
+ * Gets a list of the current user's friends.
+ */
+type ListFriendsResponse struct {
+    Friends []PublicUser    `json:"friends"`
+}
+
+func listFriendsHandler(w http.ResponseWriter, r *http.Request) int {
+    user, ok := getCurrentUser(r)
+    if !ok {
+        return http.StatusUnauthorized
+    }
+
+    var friends Users
+    friends = user.getFriends()
+
+    resp := ListFriendsResponse{
+        Friends: friends.toPublic(),
+    }
+
+    sendJSONResponse(w, resp)
+    return http.StatusOK
 }

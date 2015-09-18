@@ -7,7 +7,7 @@ import (
 )
 
 type AboutResponse struct {
-    BuildNumber string
+    BuildNumber string  `json:"buildNumber"`
 }
 
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
