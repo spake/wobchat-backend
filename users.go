@@ -51,11 +51,11 @@ func (user *User) addFriend(db gorm.DB, friend User) {
 
 func (user *User) toPublic() PublicUser {
     return PublicUser{
-        Uid: user.Uid,
-        Name: user.Name,
-        FirstName: user.FirstName,
-        LastName: user.LastName,
-        Picture: user.Picture,
+        Uid:        user.Uid,
+        Name:       user.Name,
+        FirstName:  user.FirstName,
+        LastName:   user.LastName,
+        Picture:    user.Picture,
     }
 }
 
@@ -69,32 +69,44 @@ func (users *Users) toPublic() (publicUsers []PublicUser) {
 /*
  * DB manipulation functions
  */
-func getCurrentUser(db gorm.DB, r *http.Request) (user User, ok bool) {
-    ok = false
-
-    info, authenticated := getAuthInfo(r)
-    if !authenticated {
-        log.Println("Not authenticated")
-        return
-    }
+func getUserFromInfo(db gorm.DB, info GoogleInfo) (user User) {
     log.Printf("Getting user %v\n", info.ID)
 
     // check if user already exists
     if err := db.Where("uid = ?", info.ID).First(&user).Error; err != nil {
         // create user
         user = User{
-            Uid: info.ID,
-            Name: info.DisplayName,
-            FirstName: info.FirstName,
-            LastName: info.LastName,
-            Email: info.Email,
-            Picture: info.Picture,
+            Uid:        info.ID,
+            Name:       info.DisplayName,
+            FirstName:  info.FirstName,
+            LastName:   info.LastName,
+            Email:      info.Email,
+            Picture:    info.Picture,
         }
         db.Create(&user)
+    } else {
+        // update things from the info, in case they've changed
+        user.Uid = info.ID
+        user.Name = info.DisplayName
+        user.FirstName = info.FirstName
+        user.LastName = info.LastName
+        user.Email = info.Email
+        user.Picture = info.Picture
+        db.Save(&user)
     }
 
-    ok = true
-    return
+    return user
+}
+
+func getCurrentUser(db gorm.DB, r *http.Request) (user User, ok bool) {
+    info, authenticated := getAuthInfo(r)
+    if !authenticated {
+        log.Println("Not authenticated")
+        return user, false
+    }
+
+    user = getUserFromInfo(db, info)
+    return user, true
 }
 
 /*

@@ -334,3 +334,115 @@ func TestPublicUsers(t *testing.T) {
         comparePublicUser(t, testUsers[i], publicUsers[i])
     }
 }
+
+func TestGetUserFromInfo(t *testing.T) {
+    oldPictureURL := "old_picture"
+    newPictureURL := "new_picture"
+
+    testUser := User{
+        Uid:       "10000",
+        Name:      "Wanye West",
+        FirstName: "Wanye",
+        LastName:  "West",
+        Email:     "uhh_hello@gmail.com",
+        Picture:   oldPictureURL,
+    }
+
+    log.Println("Creating test user")
+    db.Create(&testUser)
+
+    testInfoBefore := GoogleInfo{
+        ID:             testUser.Uid,
+        DisplayName:    testUser.Name,
+        FirstName:      testUser.FirstName,
+        LastName:       testUser.LastName,
+        Email:          testUser.Email,
+        Picture:        oldPictureURL,
+    }
+
+    log.Println("Getting user from before info")
+    gotUserBefore := getUserFromInfo(db, testInfoBefore)
+
+    if gotUserBefore != testUser {
+        t.Errorf("User from before info is not the same")
+    }
+
+    testInfoAfter := testInfoBefore
+    testInfoAfter.Picture = newPictureURL
+
+    log.Println("Getting user from after info")
+    gotUserAfter := getUserFromInfo(db, testInfoAfter)
+
+    if gotUserAfter.Picture != newPictureURL {
+        t.Errorf("User was not updated from GoogleInfo")
+    }
+
+    // check user is still in the db, and has been updated
+    var testUserAfter User
+    if err := db.Where("uid = ?", testUser.Uid).Find(&testUserAfter).Error; err != nil {
+        t.Errorf("User is no longer in the database")
+    }
+    if testUserAfter.Picture != newPictureURL {
+        t.Errorf("User was not updated from GoogleInfo in the database")
+    }
+
+    // check everything else was the same
+    gotUserAfter.Picture = oldPictureURL
+    testUserAfter.Picture = oldPictureURL
+    if gotUserAfter != testUser {
+        t.Errorf("Something wrong was changed after updating user from GoogleInfo")
+    }
+    if testUserAfter != testUser {
+        t.Errorf("Something wrong was changed in the database after updating user from GoogleInfo")
+    }
+}
+
+func TestGetUserFromInfoNew(t *testing.T) {
+    testInfo := GoogleInfo{
+        ID:             "10001",
+        DisplayName:    "Wanye Test",
+        FirstName:      "Wanye",
+        LastName:       "Test",
+        Email:          "uhh_sorry@gmail.com",
+        Picture:        "something",
+    }
+
+    // ensure the user doesn't exist yet
+    var testUser User
+    if err := db.Where("uid = ?", testInfo.ID).Find(&testUser).Error; err == nil {
+        t.Errorf("User already existed before signing in")
+    }
+
+    log.Println("Getting user from info")
+    gotUser := getUserFromInfo(db, testInfo)
+
+    // check all the fields are correct
+    if testInfo.ID != gotUser.Uid {
+        t.Errorf("Uid is not correct (%v -> %v)\n", testInfo.ID, gotUser.Uid)
+    }
+    if testInfo.DisplayName != gotUser.Name {
+        t.Errorf("Name is not correct (%v -> %v)\n", testInfo.DisplayName, gotUser.Name)
+    }
+    if testInfo.FirstName != gotUser.FirstName {
+        t.Errorf("FirstName is not correct (%v -> %v)\n", testInfo.FirstName, gotUser.FirstName)
+    }
+    if testInfo.LastName != gotUser.LastName {
+        t.Errorf("LastName is not correct (%v -> %v)\n", testInfo.LastName, gotUser.LastName)
+    }
+    if testInfo.Email != gotUser.Email {
+        t.Errorf("Email is not correct (%v -> %v)\n", testInfo.Email, gotUser.Email)
+    }
+    if testInfo.Picture != gotUser.Picture {
+        t.Errorf("Picture is not correct (%v -> %v)\n", testInfo.Picture, gotUser.Picture)
+    }
+
+    // ensure the user exists now
+    if err := db.Where("uid = ?", testInfo.ID).Find(&testUser).Error; err != nil {
+        t.Errorf("User doesn't exist in the database after calling getUserFromInfo")
+    }
+
+    // ensure this user is the same as what getUserFromInfo returned
+    if testUser != gotUser {
+        t.Errorf("User in database is different to what getUserFromInfo returned")
+    }
+}
