@@ -248,3 +248,89 @@ func TestAddingFriends(t *testing.T) {
         t.Errorf("test user 2 not found in friends")
     }
 }
+
+func comparePublicUser(t *testing.T, testUser User, publicUser PublicUser) {
+    log.Printf("Comparing user %v\n", testUser.Uid)
+
+    if testUser.Uid != publicUser.Uid {
+        t.Errorf("Uid not the same (%v -> %v)\n", testUser.Uid, publicUser.Uid)
+    }
+    if testUser.Name != publicUser.Name {
+        t.Errorf("Name not the same (%v -> %v)\n", testUser.Name, publicUser.Name)
+    }
+    if testUser.FirstName != publicUser.FirstName {
+        t.Errorf("FirstName not the same (%v -> %v)\n", testUser.FirstName, publicUser.FirstName)
+    }
+    if testUser.LastName != publicUser.LastName {
+        t.Errorf("LastName not the same (%v -> %v)\n", testUser.LastName, publicUser.LastName)
+    }
+    if testUser.Picture != publicUser.Picture {
+        t.Errorf("Picture not the same (%v -> %v)\n", testUser.Picture, publicUser.Picture)
+    }
+}
+
+
+func TestPublicUser(t *testing.T) {
+    testUser := User{
+        Uid:       "1337",
+        Name:      "John Smith",
+        FirstName: "John",
+        LastName:  "Smith",
+        Email:     "poopmaster@gmail.com",
+        Picture:   "something",
+    }
+
+    log.Println("Creating test user")
+    db.Create(&testUser)
+
+    log.Println("Converting to public")
+    publicUser := testUser.toPublic()
+
+    comparePublicUser(t, testUser, publicUser)
+}
+
+func TestPublicUsers(t *testing.T) {
+    testUser1 := User{
+        Uid:       "1338",
+        Name:      "John Smith",
+        FirstName: "John",
+        LastName:  "Smith",
+        Email:     "poopmaster@gmail.com",
+        Picture:   "something1",
+    }
+    testUser2 := User{
+        Uid:       "1339",
+        Name:      "Jane Smith",
+        FirstName: "Jane",
+        LastName:  "Smith",
+        Email:     "shitking@gmail.com",
+        Picture:   "something2",
+    }
+    testUser3 := User{
+        Uid:       "1340",
+        Name:      "Jake Smith",
+        FirstName: "Jake",
+        LastName:  "Smith",
+        Email:     "scrumlord@gmail.com",
+        Picture:   "something3",
+    }
+
+    log.Println("Creating test users")
+    db.Create(&testUser1)
+    db.Create(&testUser2)
+    db.Create(&testUser3)
+
+    log.Println("Creating slice of test users")
+    var testUsers Users
+    testUsers = []User{testUser1, testUser2, testUser3}
+
+    publicUsers := testUsers.toPublic()
+
+    if len(testUsers) != len(publicUsers) {
+        t.Errorf("Number of users not the same (%v -> %v)", len(testUsers), len(publicUsers))
+    }
+
+    for i := 0; i < len(testUsers); i++ {
+        comparePublicUser(t, testUsers[i], publicUsers[i])
+    }
+}
