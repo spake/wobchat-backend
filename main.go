@@ -19,12 +19,14 @@ func main() {
     cache = newMemoryCache()
 
     log.Println("Opening DB connection")
-    var err error
 
-    db, err := gorm.Open("postgres", "host=/var/run/postgresql dbname=backend sslmode=disable")
+    var err error
+    db, err = gorm.Open("postgres", "host=/var/run/postgresql dbname=backend sslmode=disable")
 
     // test configuration: leave commented out in production
     //db, err = gorm.Open("postgres", "dbname=backend sslmode=disable")
+
+    //db.LogMode(true)
 
     if err != nil {
         log.Println("Failed to open DB connection")
@@ -41,4 +43,5 @@ func main() {
     log.Println("Starting HTTP server")
     setupAPIHandlers()
     http.ListenAndServe("127.0.0.1:8000", nil)
+    log.Println(db, "after listenandserve")
 }

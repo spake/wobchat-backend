@@ -30,5 +30,5 @@ func (handler APIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func setupAPIHandlers() {
     http.HandleFunc("/about", aboutHandler)
     http.HandleFunc("/verify", verifyHandler)
-    http.Handle("/friends", APIHandler(listFriendsHandler))
+    http.Handle("/friends", APIHandler(friendsHandler))
 }

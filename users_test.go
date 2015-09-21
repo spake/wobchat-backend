@@ -133,7 +133,7 @@ func TestAddingFriends(t *testing.T) {
         t.Error("Friends found for user with no friends")
     }
 
-    log.Println("Add test user 2 as a friend to test user 1")
+    log.Println("Make test user 2 and test user 1 friends")
     testUser1.addFriend(testUser2)
 
     log.Println("Get friends of user 1")
@@ -147,21 +147,15 @@ func TestAddingFriends(t *testing.T) {
 
     log.Println("Get friends of user 2")
     friends = testUser2.getFriends()
-    if len(friends) != 0 {
-        t.Error("Friends found for user with no friends")
-    }
-
-    log.Println("Add test user 2 as a friend to test user 1")
-    testUser2.addFriend(testUser1)
-
-    log.Println("Get friends of user 2")
-    friends = testUser2.getFriends()
     if len(friends) != 1 {
         t.Errorf("1 friend should have been found, found %v\n", len(friends))
     }
     if friends[0] != testUser1 {
         t.Errorf("Friend not equal to test user 1")
     }
+
+    log.Println("Make test user 2 and test user 1 friends")
+    testUser2.addFriend(testUser1)
 
     log.Println("Get friends of user 1")
     friends = testUser1.getFriends()
@@ -170,6 +164,15 @@ func TestAddingFriends(t *testing.T) {
     }
     if friends[0] != testUser2 {
         t.Errorf("Friend not equal to test user 2")
+    }
+
+    log.Println("Get friends of user 2")
+    friends = testUser2.getFriends()
+    if len(friends) != 1 {
+        t.Errorf("1 friend should have been found, found %v\n", len(friends))
+    }
+    if friends[0] != testUser1 {
+        t.Errorf("Friend not equal to test user 1")
     }
 
     testUser3 := User{
@@ -189,7 +192,7 @@ func TestAddingFriends(t *testing.T) {
         t.Error("Friends found for user with no friends")
     }
 
-    log.Println("Adding test user 3 as friend to test user 1")
+    log.Println("Make test user 3 and test user 1 friends")
     testUser1.addFriend(testUser3)
 
     log.Println("Get friends of user 1")
@@ -209,15 +212,18 @@ func TestAddingFriends(t *testing.T) {
         t.Errorf("1 friend should have been found, found %v\n", len(friends))
     }
     if friends[0] != testUser1 {
-        t.Errorf("test user 1 not found in friends")
+        t.Errorf("Friend not equal to test user 1")
     }
     log.Println("Get friends of user 3")
     friends = testUser3.getFriends()
-    if len(friends) != 0 {
-        t.Error("Friends found for user with no friends")
+    if len(friends) != 1 {
+        t.Errorf("1 friend should have been found, found %v\n", len(friends))
+    }
+    if friends[0] != testUser1 {
+        t.Errorf("Friend not equal to test user 1")
     }
 
-    log.Println("Adding test user 2 as friend to test user 3")
+    log.Println("Make test user 2 and test user 3 friends")
     testUser3.addFriend(testUser2)
 
     log.Println("Get friends of user 1")
@@ -233,18 +239,24 @@ func TestAddingFriends(t *testing.T) {
     }
     log.Println("Get friends of user 2")
     friends = testUser2.getFriends()
-    if len(friends) != 1 {
-        t.Errorf("1 friend should have been found, found %v\n", len(friends))
+    if len(friends) != 2 {
+        t.Errorf("2 friends should have been found, found %v\n", len(friends))
     }
     if friends[0] != testUser1 {
         t.Errorf("test user 1 not found in friends")
     }
+    if friends[1] != testUser3 {
+        t.Errorf("test user 3 not found in friends")
+    }
     log.Println("Get friends of user 3")
     friends = testUser3.getFriends()
-    if len(friends) != 1 {
-        t.Errorf("1 friend should have been found, found %v\n", len(friends))
+    if len(friends) != 2 {
+        t.Errorf("2 friends should have been found, found %v\n", len(friends))
     }
-    if friends[0] != testUser2 {
+    if friends[0] != testUser1 {
+        t.Errorf("test user 1 not found in friends")
+    }
+    if friends[1] != testUser2 {
         t.Errorf("test user 2 not found in friends")
     }
 }
@@ -268,7 +280,6 @@ func comparePublicUser(t *testing.T, testUser User, publicUser PublicUser) {
         t.Errorf("Picture not the same (%v -> %v)\n", testUser.Picture, publicUser.Picture)
     }
 }
-
 
 func TestPublicUser(t *testing.T) {
     testUser := User{
@@ -444,5 +455,82 @@ func TestGetUserFromInfoNew(t *testing.T) {
     // ensure this user is the same as what getUserFromInfo returned
     if testUser != gotUser {
         t.Errorf("User in database is different to what getUserFromInfo returned")
+    }
+}
+
+func TestAddFriendEndpoint(t *testing.T) {
+    testUser4 := User{
+        Uid:       "420",
+        Name:      "Snoop Dogg",
+        FirstName: "Snoop",
+        LastName:  "Dogg",
+        Email:     "blazeit@gmail.com",
+        Picture:   "40keks"}
+
+    testUser1 := User{
+        Uid:       "12345",
+        Name:      "Jayden Smith",
+        FirstName: "Jayden",
+        LastName:  "Smith",
+        Email:     "poop@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 4")
+    db.Create(&testUser4)
+
+    log.Println("Get the friends of test user 4 - should be empty")
+    friends := testUser4.getFriends()
+    if len(friends) != 0 {
+        t.Error("Friends found for user with no friends")
+    }
+
+    log.Println("Make test user 4 and test user 1 friends")
+    response := addFriendEndpoint(testUser1, AddFriendsRequest{Uid: "420"})
+
+    if response.Success == false {
+        t.Errorf("Adding friends didn't succeed when it should have. Error: %v\n", response.Error)
+    }
+
+    log.Println("Get the friends of test user 4")
+    friends = testUser4.getFriends()
+    if len(friends) != 1 {
+        t.Errorf("1 friend should have been found, found %v\n", len(friends))
+    }
+    if friends[0] != testUser1 {
+        t.Errorf("Friend not equal to test user 1")
+    }
+
+    log.Println("Get the friends of test user 1")
+    friends = testUser1.getFriends()
+    if len(friends) != 3 {
+        t.Errorf("3 friends should have been found, found %v\n", len(friends))
+    }
+    if friends[2] != testUser4 {
+        t.Errorf("test user 4 not found in friends")
+    }
+
+    log.Println("Make test user 4 and test user 1 friends again")
+    response = addFriendEndpoint(testUser1, AddFriendsRequest{Uid: "420"})
+
+    if response.Success == true {
+        t.Error("Adding friends succeeded when it shouldn't have.")
+    }
+
+    log.Println("Get the friends of test user 4")
+    friends = testUser4.getFriends()
+    if len(friends) != 1 {
+        t.Errorf("1 friend should have been found, found %v\n", len(friends))
+    }
+    if friends[0] != testUser1 {
+        t.Errorf("Friend not equal to test user 1")
+    }
+
+    log.Println("Get the friends of test user 1")
+    friends = testUser1.getFriends()
+    if len(friends) != 3 {
+        t.Errorf("3 friends should have been found, found %v\n", len(friends))
+    }
+    if friends[2] != testUser4 {
+        t.Errorf("test user 4 not found in friends")
     }
 }

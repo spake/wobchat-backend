@@ -4,6 +4,7 @@ import (
     "encoding/json"
     "io"
     "net/http"
+    "log"
 )
 
 type AboutResponse struct {
@@ -11,6 +12,7 @@ type AboutResponse struct {
 }
 
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
+    log.Println("Handling /about")
     var build string
 
     // Get build number (if it was compiled in)

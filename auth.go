@@ -3,6 +3,7 @@ package main
 import (
     "encoding/json"
     "net/http"
+    "log"
 )
 
 /*
@@ -41,6 +42,7 @@ type VerifyResponse struct {
 }
 
 func verifyHandler(w http.ResponseWriter, r *http.Request) {
+    log.Println("Handling /verify")
     c := newContext(r)
 
     resp := VerifyResponse{}
