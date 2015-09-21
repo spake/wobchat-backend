@@ -1,10 +1,11 @@
 package main
 
 import (
-    "log"
-    "net/http"
     "encoding/json"
     "errors"
+    "log"
+    "net/http"
+    "time"
 )
 
 /*
@@ -12,7 +13,8 @@ import (
  */
 // Represents a user in the database
 type User struct {
-    Uid       string    `gorm:"primary_key"`
+    Id        int       `gorm:"primary_key" sql:"auto_increment"`
+    Uid       string    `sql:"unique"`
     Name      string
     FirstName string
     LastName  string
@@ -23,8 +25,8 @@ type User struct {
 // Represents one-way friendship in the database
 // Note that two rows are required to represent a reflexive friendship
 type UserFriend struct {
-    UserUid   string    `gorm:"primary_key"`
-    FriendUid string    `gorm:"primary_key"`
+    UserId      int `gorm:"primary_key"`
+    FriendId    int `gorm:"primary_key"`
 }
 
 type Users []User
@@ -41,21 +43,21 @@ type PublicUser struct {
 
 func (user *User) getFriends() Users {
     friends := []User{}
-    db.Joins("inner join user_friends on friend_uid = uid").Where(&UserFriend{UserUid: user.Uid}).Find(&friends)
+    db.Joins("inner join user_friends on friend_id = id").Where(&UserFriend{UserId: user.Id}).Find(&friends)
     return friends
 }
 
 func (user *User) addFriend(friend User) error {
-    if user.Uid != friend.Uid {
+    if user.Id != friend.Id {
         tx := db.Begin()
 
-        userFriend := UserFriend{UserUid: user.Uid,FriendUid: friend.Uid}
+        userFriend := UserFriend{UserId: user.Id, FriendId: friend.Id}
         if err := tx.Create(&userFriend).Error; err != nil {
             tx.Rollback()
             return err
         }
 
-        userFriend = UserFriend{UserUid: friend.Uid,FriendUid: user.Uid}
+        userFriend = UserFriend{UserId: friend.Id, FriendId: user.Id}
         if err := tx.Create(&userFriend).Error; err != nil {
             tx.Rollback()
             return err
@@ -83,6 +85,31 @@ func (users *Users) toPublic() (publicUsers []PublicUser) {
         publicUsers = append(publicUsers, user.toPublic())
     }
     return
+}
+
+func (user *User) getMessagesWithUser(otherUser User) Messages {
+    var msgs Messages
+    db.Where("(sender_id = ? and recipient_id = ?) or (sender_id = ? and recipient_id = ?)", user.Id, otherUser.Id, otherUser.Id, user.Id).Find(&msgs)
+    return msgs
+}
+
+func (user *User) addMessageToUser(otherUser User, content string, contentType ContentType) error {
+    if !contentType.valid() {
+        return errors.New("Invalid content type")
+    }
+
+    msg := Message{
+        Content:        content,
+        ContentType:    contentType,
+        SenderId:       user.Id,
+        RecipientId:    otherUser.Id,
+        RecipientType:  RecipientTypeUser,
+        Timestamp:      time.Now(),
+    }
+
+    db.Create(&msg)
+
+    return nil
 }
 
 /*

@@ -26,8 +26,6 @@ func main() {
     // test configuration: leave commented out in production
     //db, err = gorm.Open("postgres", "dbname=backend sslmode=disable")
 
-    //db.LogMode(true)
-
     if err != nil {
         log.Println("Failed to open DB connection")
         panic(err)
@@ -38,6 +36,7 @@ func main() {
     log.Println("Creating/migrating tables")
     db.AutoMigrate(&User{})
     db.AutoMigrate(&UserFriend{})
+    db.AutoMigrate(&Message{})
 
     // Set up HTTP handlers
     log.Println("Starting HTTP server")
