@@ -9,6 +9,7 @@ import (
 // Set standard response headers
 func setHTTPHeaders(w http.ResponseWriter) {
     w.Header().Set("Access-Control-Allow-Origin", "https://wob.chat")
+    w.Header().Set("Content-Type", "application/json")
 }
 
 // Sends a JSON response, and sets up necessary headers
