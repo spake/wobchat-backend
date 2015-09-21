@@ -89,7 +89,7 @@ func (users *Users) toPublic() (publicUsers []PublicUser) {
 
 func (user *User) getMessagesWithUser(otherUser User) Messages {
     var msgs Messages
-    db.Where("(sender_id = ? and recipient_id = ?) or (sender_id = ? and recipient_id = ?)", user.Id, otherUser.Id, otherUser.Id, user.Id)
+    db.Where("(sender_id = ? and recipient_id = ?) or (sender_id = ? and recipient_id = ?)", user.Id, otherUser.Id, otherUser.Id, user.Id).Find(&msgs)
     return msgs
 }
 

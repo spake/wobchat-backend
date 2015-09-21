@@ -39,6 +39,7 @@ func main() {
     log.Println("Creating/migrating tables")
     db.AutoMigrate(&User{})
     db.AutoMigrate(&UserFriend{})
+    db.AutoMigrate(&Message{})
 
     // Set up HTTP handlers
     log.Println("Starting HTTP server")

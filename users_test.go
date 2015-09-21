@@ -29,15 +29,18 @@ func TestMain(m *testing.M) {
     // drop the tables in case the last test run didn't drop them
     db.DropTable(&User{})
     db.DropTable(&UserFriend{})
+    db.DropTable(&Message{})
 
     log.Println("Creating/migrating tables")
     db.AutoMigrate(&User{})
     db.AutoMigrate(&UserFriend{})
+    db.AutoMigrate(&Message{})
 
     result := m.Run()
 
     db.DropTable(&User{})
     db.DropTable(&UserFriend{})
+    db.DropTable(&Message{})
 
     os.Exit(result)
 }
@@ -561,5 +564,106 @@ func TestAddFriendEndpoint(t *testing.T) {
     }
     if friends[0] != testUser4 {
         t.Errorf("test user 4 not found in friends")
+    }
+}
+
+func TestMessages(t *testing.T) {
+    defer resetTables()
+
+    user1 := User{
+        Uid:       "420",
+        Name:      "Snoop Doge",
+        FirstName: "Snoop",
+        LastName:  "Doge",
+        Email:     "higher@gmail.com",
+        Picture:   "42keks"}
+
+    log.Println("Creating test user 1")
+    db.Create(&user1)
+
+    user2 := User{
+        Uid:       "421",
+        Name:      "Peppa Pig",
+        FirstName: "Peppa",
+        LastName:  "Pig",
+        Email:     "p.pig@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 2")
+    db.Create(&user2)
+
+    log.Println("Getting messages (should be none)")
+    messages1 := user1.getMessagesWithUser(user2)
+    messages2 := user2.getMessagesWithUser(user1)
+    if len(messages1) != 0 {
+        t.Errorf("Should have found 0 messages, found %v\n", len(messages1))
+    }
+    if len(messages2) != 0 {
+        t.Errorf("Should have found 0 messages, found %v\n", len(messages2))
+    }
+
+    log.Println("Adding invalid messages")
+    if err := user1.addMessageToUser(user2, "this is messed up", -1); err == nil {
+        t.Errorf("Should have failed with an invalid content type")
+    }
+
+    log.Println("Adding empty message")
+    if err := user1.addMessageToUser(user2, "", ContentTypeText); err != nil {
+        t.Errorf("Shouldn't have failed on empty message")
+    }
+
+    messages1 = user1.getMessagesWithUser(user2)
+    messages2 = user2.getMessagesWithUser(user1)
+    if len(messages1) != 1 {
+        t.Errorf("Should have found 1 message, found %v\n", len(messages1))
+    }
+    if len(messages2) != 1 {
+        t.Errorf("Should have found 1 message, found %v\n", len(messages2))
+    }
+
+    text1 := "u wot snoop?"
+    text2 := "top kek"
+
+    log.Println("Adding normal messages")
+    if err := user2.addMessageToUser(user1, text1, ContentTypeText); err != nil {
+        t.Errorf("Shouldn't have failed on normal message")
+    }
+    if err := user1.addMessageToUser(user2, text2, ContentTypeText); err != nil {
+        t.Errorf("Shouldn't have failed on normal message")
+    }
+
+    messages1 = user1.getMessagesWithUser(user2)
+    messages2 = user2.getMessagesWithUser(user1)
+    if len(messages1) != 3 {
+        t.Errorf("Should have found 3 messages, found %v\n", len(messages1))
+    }
+    if len(messages2) != 3 {
+        t.Errorf("Should have found 3 messages, found %v\n", len(messages2))
+    }
+
+    if messages1[0].Content != "" {
+        t.Errorf("Invalid message content; wanted %v, found %v\n", "", messages1[0].Content)
+    }
+    if messages1[1].Content != text1 {
+        t.Errorf("Invalid message content; wanted %v, found %v\n", text1, messages1[1].Content)
+    }
+    if messages1[2].Content != text2 {
+        t.Errorf("Invalid message content; wanted %v, found %v\n", text2, messages1[2].Content)
+    }
+    if messages2[0].Content != "" {
+        t.Errorf("Invalid message content; wanted %v, found %v\n", "", messages2[0].Content)
+    }
+    if messages2[1].Content != text1 {
+        t.Errorf("Invalid message content; wanted %v, found %v\n", text1, messages2[1].Content)
+    }
+    if messages2[2].Content != text2 {
+        t.Errorf("Invalid message content; wanted %v, found %v\n", text2, messages2[2].Content)
+    }
+
+    if sender, err := messages1[0].getSender(); err != nil || sender.Id != messages1[0].SenderId {
+        t.Errorf("Invalid sender ID")
+    }
+    if recipient, err := messages1[0].getRecipientUser(); err != nil || recipient.Id != messages1[0].RecipientId {
+        t.Errorf("Invalid recipient ID")
     }
 }
