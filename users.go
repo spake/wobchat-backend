@@ -196,8 +196,9 @@ type AddFriendsRequest struct {
 }
 
 type AddFriendsResponse struct {
-    Success bool      `json:"success"`
-    Error   string    `json:"error"`
+    Success bool        `json:"success"`
+    Error   string      `json:"error"`
+    Friend  PublicUser  `json:"friend"`
 }
 
 func addFriendEndpoint(user User, req AddFriendsRequest) AddFriendsResponse {
@@ -218,7 +219,7 @@ func addFriendEndpoint(user User, req AddFriendsRequest) AddFriendsResponse {
         } else {
             resp = AddFriendsResponse{
                 Success: true,
-                Error:   ""}
+                Friend: friend.toPublic()}
         }
     } else {
         // friend they are trying to add not found
