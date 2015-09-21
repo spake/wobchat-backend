@@ -5,7 +5,7 @@ import (
     "log"
     "github.com/jinzhu/gorm"
     "os"
-    "flag"
+    "flag" // TW
 )
 
 var printQueries = flag.Bool("printqueries", false, "Print all queries run through the database")
@@ -13,7 +13,8 @@ var printQueries = flag.Bool("printqueries", false, "Print all queries run throu
 func TestMain(m *testing.M) {
     flag.Parse()
     log.Println("Opening DB connection")
-    dbTmp, err := gorm.Open("postgres", "host=/var/run/postgresql dbname=backendtest sslmode=disable")
+    //dbTmp, err := gorm.Open("postgres", "host=/var/run/postgresql dbname=backendtest sslmode=disable")
+    dbTmp, err := gorm.Open("postgres", "dbname=backendtest sslmode=disable")
     if err != nil {
         log.Println("Failed to open DB connection")
         panic(err)
@@ -41,7 +42,15 @@ func TestMain(m *testing.M) {
     os.Exit(result)
 }
 
+func resetTables() {
+    log.Println("Resetting tables")
+    db.Exec("DELETE FROM users;")
+    db.Exec("DELETE FROM user_friends;")
+}
+
 func TestCreatingUsers(t *testing.T) {
+    defer resetTables()
+
     testUser1 := User{
         Uid:       "12345",
         Name:      "Jayden Smith",
@@ -80,6 +89,8 @@ func TestCreatingUsers(t *testing.T) {
 }
 
 func TestDeletingUsers(t *testing.T) {
+    defer resetTables()
+
     log.Println("Deleting test user 1")
     db.Where(&User{Uid: "12345"}).Delete(User{})
 
@@ -102,6 +113,8 @@ func TestDeletingUsers(t *testing.T) {
 }
 
 func TestAddingFriends(t *testing.T) {
+    defer resetTables()
+
     testUser1 := User{
         Uid:       "12345",
         Name:      "Jayden Smith",
@@ -120,6 +133,9 @@ func TestAddingFriends(t *testing.T) {
         LastName:  "Smith",
         Email:     "doody@gmail.com",
         Picture:   "someurl"}
+
+    log.Println("Creating test user 2")
+    db.Create(&testUser2)
 
     log.Println("Get the friends of test user 1 - should be empty")
     friends := testUser1.getFriends()
@@ -282,6 +298,8 @@ func comparePublicUser(t *testing.T, testUser User, publicUser PublicUser) {
 }
 
 func TestPublicUser(t *testing.T) {
+    defer resetTables()
+
     testUser := User{
         Uid:       "1337",
         Name:      "John Smith",
@@ -301,6 +319,8 @@ func TestPublicUser(t *testing.T) {
 }
 
 func TestPublicUsers(t *testing.T) {
+    defer resetTables()
+
     testUser1 := User{
         Uid:       "1338",
         Name:      "John Smith",
@@ -347,6 +367,8 @@ func TestPublicUsers(t *testing.T) {
 }
 
 func TestGetUserFromInfo(t *testing.T) {
+    defer resetTables()
+
     oldPictureURL := "old_picture"
     newPictureURL := "new_picture"
 
@@ -409,6 +431,8 @@ func TestGetUserFromInfo(t *testing.T) {
 }
 
 func TestGetUserFromInfoNew(t *testing.T) {
+    defer resetTables()
+
     testInfo := GoogleInfo{
         ID:             "10001",
         DisplayName:    "Wanye Test",
@@ -459,6 +483,8 @@ func TestGetUserFromInfoNew(t *testing.T) {
 }
 
 func TestAddFriendEndpoint(t *testing.T) {
+    defer resetTables()
+
     testUser4 := User{
         Uid:       "420",
         Name:      "Snoop Dogg",
@@ -466,6 +492,9 @@ func TestAddFriendEndpoint(t *testing.T) {
         LastName:  "Dogg",
         Email:     "blazeit@gmail.com",
         Picture:   "40keks"}
+
+    log.Println("Creating test user 4")
+    db.Create(&testUser4)
 
     testUser1 := User{
         Uid:       "12345",
@@ -475,8 +504,8 @@ func TestAddFriendEndpoint(t *testing.T) {
         Email:     "poop@gmail.com",
         Picture:   "someurl"}
 
-    log.Println("Creating test user 4")
-    db.Create(&testUser4)
+    log.Println("Creating test user 1")
+    db.Create(&testUser1)
 
     log.Println("Get the friends of test user 4 - should be empty")
     friends := testUser4.getFriends()
@@ -502,10 +531,10 @@ func TestAddFriendEndpoint(t *testing.T) {
 
     log.Println("Get the friends of test user 1")
     friends = testUser1.getFriends()
-    if len(friends) != 3 {
-        t.Errorf("3 friends should have been found, found %v\n", len(friends))
+    if len(friends) != 1 {
+        t.Errorf("1 friends should have been found, found %v\n", len(friends))
     }
-    if friends[2] != testUser4 {
+    if friends[0] != testUser4 {
         t.Errorf("test user 4 not found in friends")
     }
 
@@ -527,10 +556,10 @@ func TestAddFriendEndpoint(t *testing.T) {
 
     log.Println("Get the friends of test user 1")
     friends = testUser1.getFriends()
-    if len(friends) != 3 {
-        t.Errorf("3 friends should have been found, found %v\n", len(friends))
+    if len(friends) != 1 {
+        t.Errorf("1 friends should have been found, found %v\n", len(friends))
     }
-    if friends[2] != testUser4 {
+    if friends[0] != testUser4 {
         t.Errorf("test user 4 not found in friends")
     }
 }
