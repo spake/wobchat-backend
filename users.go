@@ -18,7 +18,6 @@ type User struct {
     LastName  string
     Email     string
     Picture   string
-    Messages  []Messages `gorm:"polymorphic:MessageRecipient;"`
 }
 
 // Represents one-way friendship in the database
