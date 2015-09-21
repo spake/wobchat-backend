@@ -48,6 +48,7 @@ func resetTables() {
     log.Println("Resetting tables")
     db.Exec("DELETE FROM users;")
     db.Exec("DELETE FROM user_friends;")
+    db.Exec("DELETE FROM messages;")
 }
 
 func TestCreatingUsers(t *testing.T) {
@@ -516,7 +517,7 @@ func TestAddFriendEndpoint(t *testing.T) {
     }
 
     log.Println("Make test user 4 and test user 1 friends")
-    response := addFriendEndpoint(testUser1, AddFriendsRequest{Uid: "420"})
+    response := addFriendEndpoint(testUser1, AddFriendRequest{Uid: "420"})
 
     if response.Success == false {
         t.Errorf("Adding friends didn't succeed when it should have. Error: %v\n", response.Error)
@@ -541,7 +542,7 @@ func TestAddFriendEndpoint(t *testing.T) {
     }
 
     log.Println("Make test user 4 and test user 1 friends again")
-    response = addFriendEndpoint(testUser1, AddFriendsRequest{Uid: "420"})
+    response = addFriendEndpoint(testUser1, AddFriendRequest{Uid: "420"})
 
     if response.Success == true {
         t.Error("Adding friends succeeded when it shouldn't have.")

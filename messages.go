@@ -1,7 +1,10 @@
 package main
 
 import (
+    "encoding/json"
     "errors"
+    "log"
+    "net/http"
     "time"
 )
 
@@ -47,4 +50,110 @@ func (msg *Message) getRecipientUser() (recipient User, err error) {
         err = db.Where(&User{Id: msg.RecipientId}).First(&recipient).Error
     }
     return
+}
+
+/*
+ * API endpoints
+ */
+
+/*
+ * /messages endpoint
+ */
+
+func messagesHandler(w http.ResponseWriter, r *http.Request) int {
+    log.Println("Handling /messages")
+    user, ok := getCurrentUser(r)
+    if !ok {
+        return http.StatusUnauthorized
+    }
+
+    var resp interface{}
+
+    switch r.Method {
+    case "GET":
+        r.ParseForm()
+        //TODO: what if this isn't given?
+        friendUid := r.FormValue("f")
+        resp = listMessagesEndpoint(user, friendUid)
+    case "POST":
+        decoder := json.NewDecoder(r.Body)
+        var req SendMessageRequest
+        err := decoder.Decode(&req)
+        if err != nil {
+            log.Println("JSON decoding failed")
+            return http.StatusBadRequest
+        }
+        resp = sendMessageEndpoint(user, req)
+    default:
+        return http.StatusMethodNotAllowed
+    }
+
+    sendJSONResponse(w, resp)
+    return http.StatusOK
+}
+
+/*
+ * GET /messages?f=<friend uid>
+ * Gets a list of the messages between the current user and the specified friend.
+ */
+type ListMessagesResponse struct {
+    Messages Messages    `json:"messages"`
+    Error    string      `json:"error"`
+}
+
+func listMessagesEndpoint(user User, friendUid string) ListMessagesResponse {
+    var friend User
+    dbErr := db.Where(&User{Uid: friendUid}).First(&friend).Error
+    
+
+    if dbErr != nil {
+        // friend they are trying to list messages between not found'
+        return ListMessagesResponse{
+                  Error:   "Friend not found"}
+    }
+
+    var messages Messages
+    messages = user.getMessagesWithUser(friend)
+
+    return ListMessagesResponse{
+        Messages: messages,
+    }
+}
+
+/*
+ * POST /messages
+ * Sends a message from the current user to the specified friend
+ */
+type SendMessageRequest struct {
+    Uid         string      `json:"uid"`
+    Content     string      `json:"content"`
+    ContentType ContentType `json:"contentType"`
+}
+
+type SendMessageResponse struct {
+    Success bool        `json:"success"`
+    Error   string      `json:"error"`
+}
+
+func sendMessageEndpoint(user User, req SendMessageRequest) SendMessageResponse {
+    var friend User
+    dbErr := db.Where(&User{Uid: req.Uid}).First(&friend).Error
+
+    if dbErr != nil {
+        // friend they are trying to send message to not found
+        // TODO: check if they are also a friend of that user
+        return SendMessageResponse{
+            Success: false,
+            Error:   "Friend not found"}
+    }
+
+    sendErr := user.addMessageToUser(friend, req.Content, req.ContentType)
+
+    if sendErr != nil {
+        return SendMessageResponse{
+            Success: false,
+            Error:   sendErr.Error()}
+    }
+
+    return SendMessageResponse{Success: true}
 }

@@ -42,5 +42,4 @@ func main() {
     log.Println("Starting HTTP server")
     setupAPIHandlers()
     http.ListenAndServe("127.0.0.1:8000", nil)
-    log.Println(db, "after listenandserve")
 }

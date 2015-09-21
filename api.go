@@ -38,4 +38,5 @@ func setupAPIHandlers() {
     http.HandleFunc("/about", aboutHandler)
     http.HandleFunc("/verify", verifyHandler)
     http.Handle("/friends", APIHandler(friendsHandler))
+    http.Handle("/messages", APIHandler(messagesHandler))
 }
