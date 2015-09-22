@@ -95,7 +95,7 @@ func messagesHandler(w http.ResponseWriter, r *http.Request) int {
 }
 
 /*
- * GET /messages?f=<friend uid>
+ * GET /messages/{friendUid}
  * Gets a list of the messages between the current user and the specified friend.
  */
 type ListMessagesResponse struct {
@@ -123,7 +123,7 @@ func listMessagesEndpoint(user User, friendUid string) ListMessagesResponse {
 }
 
 /*
- * POST /messages
+ * POST /messages/{friendUid}
  * Sends a message from the current user to the specified friend
  */
 type SendMessageRequest struct {
