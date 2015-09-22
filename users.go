@@ -89,10 +89,7 @@ func (users *Users) toPublic() (publicUsers []PublicUser) {
     return
 }
 
-func (user *User) getMessagesWithUser(otherUser User) Messages {
-    var msgs Messages
-    // do these need to be sorted by time?
-    // need to check if user and otherUser are the same
+func (user *User) getMessagesWithUser(otherUser User) (msgs Messages) {
     db.Where("(sender_id = ? and recipient_id = ?) or (sender_id = ? and recipient_id = ?)", user.Id, otherUser.Id, otherUser.Id, user.Id).Find(&msgs)
     return msgs
 }

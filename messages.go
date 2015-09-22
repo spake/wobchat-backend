@@ -60,11 +60,11 @@ func (msg *Message) getRecipientUser() (recipient User, err error) {
  */
 
 /*
- * /messages endpoint
+ * /friends/{friendId}/messages endpoint
  */
 
 func messagesHandler(w http.ResponseWriter, r *http.Request) int {
-    log.Println("Handling /messages")
+    log.Println("Handling /friends/{friendId}/messages")
     user, ok := getCurrentUser(r)
     if !ok {
         return http.StatusUnauthorized
@@ -72,8 +72,8 @@ func messagesHandler(w http.ResponseWriter, r *http.Request) int {
 
     vars := mux.Vars(r)
     friendId, err := strconv.Atoi(vars["friendId"])
-    if err != nil {
-        log.Println("Friend ID not integer")
+    if err != nil || friendId <= 0 {
+        log.Println("Friend ID not positive integer")
         return http.StatusBadRequest
     }
 
@@ -100,7 +100,7 @@ func messagesHandler(w http.ResponseWriter, r *http.Request) int {
 }
 
 /*
- * GET /messages/{friendId}
+ * GET /friends/{friendId}/messages
  * Gets a list of the messages between the current user and the specified friend.
  */
 type ListMessagesResponse struct {
@@ -109,9 +109,14 @@ type ListMessagesResponse struct {
 }
 
 func listMessagesEndpoint(user User, friendId int) ListMessagesResponse {
+    if friendId == user.Id {
+        return ListMessagesResponse{
+            Error:  "You can't list messages with yourself",
+        }
+    }
+
     var friend User
     dbErr := db.Where(&User{Id: friendId}).First(&friend).Error
-    
 
     if dbErr != nil {
         // friend they are trying to list messages between not found'
@@ -128,7 +133,7 @@ func listMessagesEndpoint(user User, friendId int) ListMessagesResponse {
 }
 
 /*
- * POST /messages/{friendId}
+ * POST /friends/{friendId}/messages
  * Sends a message from the current user to the specified friend
  */
 type SendMessageRequest struct {
@@ -142,6 +147,13 @@ type SendMessageResponse struct {
 }
 
 func sendMessageEndpoint(user User, friendId int, req SendMessageRequest) SendMessageResponse {
+    if friendId == user.Id {
+        return SendMessageResponse{
+            Success:    false,
+            Error:      "You can't send messages to yourself",
+        }
+    }
+
     var friend User
     dbErr := db.Where(&User{Id: friendId}).First(&friend).Error
 
