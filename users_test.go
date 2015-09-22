@@ -742,4 +742,6 @@ func TestAddAndGetMessagesWithUser(t *testing.T) {
     if recipient, err := messages1[0].getRecipientUser(); err != nil || recipient.Id != messages1[0].RecipientId {
         t.Errorf("Invalid recipient ID")
     }
+
+    // TODO: test ID returned by addMessageToUser when we have a function to get message by ID
 }
