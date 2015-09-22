@@ -12,8 +12,12 @@ var printQueries = flag.Bool("printqueries", false, "Print all queries run throu
 
 func TestMain(m *testing.M) {
     flag.Parse()
+
+    log.Println("Reading config file")
+    cfg = setupConfig()
+
     log.Println("Opening DB connection")
-    dbTmp, err := gorm.Open("postgres", "host=/var/run/postgresql dbname=backendtest sslmode=disable")
+    dbTmp, err := gorm.Open(cfg.Database.Type, cfg.Database.TestConnectionString)
     if err != nil {
         log.Println("Failed to open DB connection")
         panic(err)
