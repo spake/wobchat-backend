@@ -104,14 +104,16 @@ func messagesHandler(w http.ResponseWriter, r *http.Request) int {
  * Gets a list of the messages between the current user and the specified friend.
  */
 type ListMessagesResponse struct {
-    Messages Messages    `json:"messages"`
-    Error    string      `json:"error"`
+    Success     bool        `json:"success"`
+    Error       string      `json:"error"`
+    Messages    Messages    `json:"messages"`
 }
 
 func listMessagesEndpoint(user User, friendId int) ListMessagesResponse {
     if friendId == user.Id {
         return ListMessagesResponse{
-            Error:  "You can't list messages from yourself",
+            Success:    false,
+            Error:      "You can't list messages from yourself",
         }
     }
 
@@ -121,13 +123,15 @@ func listMessagesEndpoint(user User, friendId int) ListMessagesResponse {
     if dbErr != nil {
         // friend they are trying to list messages between not found
         return ListMessagesResponse{
-            Error:   "Friend not found",
+            Success:    false,
+            Error:      "Friend not found",
         }
     }
 
     if !user.isFriend(friend) {
         return ListMessagesResponse{
-            Error:  "User is not your friend",
+            Success:    false,
+            Error:      "User is not your friend",
         }
     }
 
@@ -135,6 +139,7 @@ func listMessagesEndpoint(user User, friendId int) ListMessagesResponse {
     messages = user.getMessagesWithUser(friend)
 
     return ListMessagesResponse{
+        Success:    true,
         Messages:   messages,
     }
 }

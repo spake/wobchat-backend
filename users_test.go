@@ -580,6 +580,67 @@ func TestAddFriendEndpoint(t *testing.T) {
     }
 }
 
+func TestGetFriendEndpoint(t *testing.T) {
+    defer resetTables()
+
+    testUser1 := User{
+        Id:        1,
+        Uid:       "1",
+        Name:      "Snoop Dogg",
+        FirstName: "Snoop",
+        LastName:  "Dogg",
+        Email:     "blazeit@gmail.com",
+        Picture:   "40keks"}
+
+    log.Println("Creating test user 1")
+    db.Create(&testUser1)
+
+    testUser2 := User{
+        Id:        2,
+        Uid:       "2",
+        Name:      "Jayden Smith",
+        FirstName: "Jayden",
+        LastName:  "Smith",
+        Email:     "poop@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 2")
+    db.Create(&testUser2)
+
+    log.Println("User 1 get friend user 1 (same user)")
+    resp := getFriendEndpoint(testUser1, 1)
+    if resp.Error == "" {
+        t.Error("Users shouldn't be able to do get friend on their own ID")
+    }
+
+    log.Println("User 1 get friend user 2 (not friends)")
+    resp = getFriendEndpoint(testUser1, 2)
+    if resp.Error == "" {
+        t.Error("Users shouldn't be able to do get friend on users that aren't their friends")
+    }
+
+    log.Println("Adding users as friends")
+    testUser1.addFriend(testUser2)
+
+    log.Println("User 1 get friend user 2")
+    resp = getFriendEndpoint(testUser1, 2)
+    if resp.Error != "" {
+        t.Error("Users should be able to do get friend on users that are their friends")
+    }
+    if resp.Friend.Id != 2 {
+        t.Error("Get friend returned bad ID")
+    }
+
+    log.Println("User 2 get friend user 1")
+    resp = getFriendEndpoint(testUser2, 1)
+    if resp.Error != "" {
+        t.Error("Users should be able to do get friend on users that are their friends")
+    }
+    if resp.Friend.Id != 1 {
+        t.Error("Get friend returned bad ID")
+    }
+}
+
 func TestAddAndGetMessagesWithUser(t *testing.T) {
     defer resetTables()
 

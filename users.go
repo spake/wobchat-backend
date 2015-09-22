@@ -5,7 +5,10 @@ import (
     "errors"
     "log"
     "net/http"
+    "strconv"
     "time"
+
+    "github.com/gorilla/mux"
 )
 
 /*
@@ -207,6 +210,7 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) int {
  * Gets a list of the current user's friends.
  */
 type ListFriendsResponse struct {
+    Success bool            `json:"success"`
     Friends []PublicUser    `json:"friends"`
 }
 
@@ -215,7 +219,8 @@ func listFriendsEndpoint(user User) ListFriendsResponse {
     friends = user.getFriends()
 
     resp := ListFriendsResponse{
-        Friends: friends.toPublic(),
+        Success:    true,
+        Friends:    friends.toPublic(),
     }
 
     return resp
@@ -257,4 +262,77 @@ func addFriendEndpoint(user User, req AddFriendRequest) AddFriendResponse {
     return AddFriendResponse{
         Success: true,
         Friend: friend.toPublic()}
+}
+
+/*
+ * /friends/{friendId} endpoint
+ */
+
+func friendHandler(w http.ResponseWriter, r *http.Request) int {
+    log.Println("Handling /friend/{friendId}")
+    user, ok := getCurrentUser(r)
+    if !ok {
+        return http.StatusUnauthorized
+    }
+
+    vars := mux.Vars(r)
+    friendId, err := strconv.Atoi(vars["friendId"])
+    if err != nil || friendId <= 0 {
+        log.Println("Friend ID not positive integer")
+        return http.StatusBadRequest
+    }
+
+    var resp interface{}
+
+    switch r.Method {
+    case "GET":
+        resp = getFriendEndpoint(user, friendId)
+    default:
+        return http.StatusMethodNotAllowed
+    }
+
+    sendJSONResponse(w, resp)
+    return http.StatusOK
+}
+
+/*
+ * GET /friends/{friendId}
+ * Gets a list of the messages between the current user and the specified friend.
+ */
+type GetFriendResponse struct {
+    Success bool        `json:"success"`
+    Error   string      `json:"error"`
+    Friend  PublicUser  `json:"friend"`
+}
+
+func getFriendEndpoint(user User, friendId int) GetFriendResponse {
+    if friendId == user.Id {
+        return GetFriendResponse{
+            Success:    false,
+            Error:      "Friend ID cannot be your own",
+        }
+    }
+
+    var friend User
+    dbErr := db.Where(&User{Id: friendId}).First(&friend).Error
+
+    if dbErr != nil {
+        // friend not found
+        return GetFriendResponse{
+            Success:    false,
+            Error:      "Friend not found",
+        }
+    }
+
+    if !user.isFriend(friend) {
+        return GetFriendResponse{
+            Success:    false,
+            Error:      "User is not your friend",
+        }
+    }
+
+    return GetFriendResponse{
+        Success:    true,
+        Friend:     friend.toPublic(),
+    }
 }
