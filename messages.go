@@ -156,6 +156,7 @@ type SendMessageRequest struct {
 type SendMessageResponse struct {
     Success bool        `json:"success"`
     Error   string      `json:"error"`
+    Id      int         `json:"id"`
 }
 
 func sendMessageEndpoint(user User, friendId int, req SendMessageRequest) SendMessageResponse {
@@ -185,7 +186,7 @@ func sendMessageEndpoint(user User, friendId int, req SendMessageRequest) SendMe
         }
     }
 
-    sendErr := user.addMessageToUser(friend, req.Content, req.ContentType)
+    msgId, sendErr := user.addMessageToUser(friend, req.Content, req.ContentType)
 
     if sendErr != nil {
         return SendMessageResponse{
@@ -194,5 +195,8 @@ func sendMessageEndpoint(user User, friendId int, req SendMessageRequest) SendMe
         }
     }
 
-    return SendMessageResponse{Success: true}
+    return SendMessageResponse{
+        Success:    true,
+        Id:         msgId,
+    }
 }

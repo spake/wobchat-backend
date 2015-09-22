@@ -105,9 +105,9 @@ func (user *User) getMessagesWithUser(otherUser User) (msgs Messages) {
     return msgs
 }
 
-func (user *User) addMessageToUser(otherUser User, content string, contentType ContentType) error {
+func (user *User) addMessageToUser(otherUser User, content string, contentType ContentType) (id int, err error) {
     if !contentType.valid() {
-        return errors.New("Invalid content type")
+        return 0, errors.New("Invalid content type")
     }
 
     msg := Message{
@@ -121,7 +121,7 @@ func (user *User) addMessageToUser(otherUser User, content string, contentType C
 
     db.Create(&msg)
 
-    return nil
+    return msg.Id, nil
 }
 
 /*
