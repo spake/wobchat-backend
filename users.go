@@ -228,7 +228,7 @@ func listFriendsEndpoint(user User) ListFriendsResponse {
 
 /*
  * POST /friends
- * Adds a friend to the current user.
+ * Adds a user as a friend of the current user.
  */
 type AddFriendRequest struct {
     Id  int `json:"id"`
@@ -297,7 +297,7 @@ func friendHandler(w http.ResponseWriter, r *http.Request) int {
 
 /*
  * GET /friends/{friendId}
- * Gets a list of the messages between the current user and the specified friend.
+ * Gets a friend of the current user by their Id.
  */
 type GetFriendResponse struct {
     Success bool        `json:"success"`

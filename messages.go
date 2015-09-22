@@ -101,7 +101,8 @@ func messagesHandler(w http.ResponseWriter, r *http.Request) int {
 
 /*
  * GET /friends/{friendId}/messages
- * Gets a list of the messages between the current user and the specified friend.
+ * Gets a list of the messages between the current user and their friend specified
+ * by the Id.
  */
 type ListMessagesResponse struct {
     Success     bool        `json:"success"`
@@ -146,7 +147,7 @@ func listMessagesEndpoint(user User, friendId int) ListMessagesResponse {
 
 /*
  * POST /friends/{friendId}/messages
- * Sends a message from the current user to the specified friend
+ * Sends a message from the current user to their friend specified by the Id.
  */
 type SendMessageRequest struct {
     Content     string      `json:"content"`
