@@ -9,6 +9,7 @@ func TestCreatingUsers(t *testing.T) {
     defer resetTables()
 
     testUser1 := User{
+        Id:        12345,
         Uid:       "12345",
         Name:      "Jayden Smith",
         FirstName: "Jayden",
@@ -20,6 +21,7 @@ func TestCreatingUsers(t *testing.T) {
     db.Create(&testUser1)
 
     testUser2 := User{
+        Id:        12346,
         Uid:       "12346",
         Name:      "Will Smith",
         FirstName: "Will",
@@ -32,14 +34,14 @@ func TestCreatingUsers(t *testing.T) {
 
     log.Println("Accessing test user 1")
     user1 := User{}
-    db.Where(&User{Uid: "12345"}).First(&user1)
+    db.Where(&User{Id: 12345}).First(&user1)
     if user1 != testUser1 {
         t.Error("User accessed not the same as user inserted")
     }
 
     log.Println("Accessing test user 2")
     user2 := User{}
-    db.Where(&User{Uid: "12346"}).First(&user2)
+    db.Where(&User{Id: 12346}).First(&user2)
     if user2 != testUser2 {
         t.Error("User accessed not the same as user inserted")
     }
@@ -49,21 +51,21 @@ func TestDeletingUsers(t *testing.T) {
     defer resetTables()
 
     log.Println("Deleting test user 1")
-    db.Where(&User{Uid: "12345"}).Delete(User{})
+    db.Where(&User{Id: 12345}).Delete(User{})
 
     log.Println("Accessing test user 1")
     user1 := User{}
-    db.Where(&User{Uid: "12345"}).First(&user1)
+    db.Where(&User{Id: 12345}).First(&user1)
     if user1.Uid != "" {
         t.Error("Deleted user still exists")
     }
 
     log.Println("Deleting test user 2")
-    db.Where(&User{Uid: "12345"}).Delete(User{})
+    db.Where(&User{Id: 12345}).Delete(User{})
 
     log.Println("Accessing test user 2")
     user2 := User{}
-    db.Where(&User{Uid: "12345"}).First(&user1)
+    db.Where(&User{Id: 12345}).First(&user1)
     if user2.Uid != "" {
         t.Error("Deleted user still exists")
     }
@@ -73,6 +75,7 @@ func TestAddingFriends(t *testing.T) {
     defer resetTables()
 
     testUser1 := User{
+        Id:        12345,
         Uid:       "12345",
         Name:      "Jayden Smith",
         FirstName: "Jayden",
@@ -84,6 +87,7 @@ func TestAddingFriends(t *testing.T) {
     db.Create(&testUser1)
 
     testUser2 := User{
+        Id:        12346,
         Uid:       "12346",
         Name:      "Will Smith",
         FirstName: "Will",
@@ -149,6 +153,7 @@ func TestAddingFriends(t *testing.T) {
     }
 
     testUser3 := User{
+        Id:        12347,
         Uid:       "12347",
         Name:      "Kanye West",
         FirstName: "Kanye",
@@ -235,10 +240,10 @@ func TestAddingFriends(t *testing.T) {
 }
 
 func comparePublicUser(t *testing.T, testUser User, publicUser PublicUser) {
-    log.Printf("Comparing user %v\n", testUser.Uid)
+    log.Printf("Comparing user %v\n", testUser.Id)
 
-    if testUser.Uid != publicUser.Uid {
-        t.Errorf("Uid not the same (%v -> %v)\n", testUser.Uid, publicUser.Uid)
+    if testUser.Id != publicUser.Id {
+        t.Errorf("Id not the same (%v -> %v)\n", testUser.Id, publicUser.Id)
     }
     if testUser.Name != publicUser.Name {
         t.Errorf("Name not the same (%v -> %v)\n", testUser.Name, publicUser.Name)
@@ -258,6 +263,7 @@ func TestPublicUser(t *testing.T) {
     defer resetTables()
 
     testUser := User{
+        Id:        1337,
         Uid:       "1337",
         Name:      "John Smith",
         FirstName: "John",
@@ -279,6 +285,7 @@ func TestPublicUsers(t *testing.T) {
     defer resetTables()
 
     testUser1 := User{
+        Id:        1338,
         Uid:       "1338",
         Name:      "John Smith",
         FirstName: "John",
@@ -287,6 +294,7 @@ func TestPublicUsers(t *testing.T) {
         Picture:   "something1",
     }
     testUser2 := User{
+        Id:        1339,
         Uid:       "1339",
         Name:      "Jane Smith",
         FirstName: "Jane",
@@ -295,6 +303,7 @@ func TestPublicUsers(t *testing.T) {
         Picture:   "something2",
     }
     testUser3 := User{
+        Id:        1340,
         Uid:       "1340",
         Name:      "Jake Smith",
         FirstName: "Jake",
@@ -330,6 +339,7 @@ func TestGetUserFromInfo(t *testing.T) {
     newPictureURL := "new_picture"
 
     testUser := User{
+        Id:        10000,
         Uid:       "10000",
         Name:      "Wanye West",
         FirstName: "Wanye",
@@ -369,7 +379,7 @@ func TestGetUserFromInfo(t *testing.T) {
 
     // check user is still in the db, and has been updated
     var testUserAfter User
-    if err := db.Where("uid = ?", testUser.Uid).Find(&testUserAfter).Error; err != nil {
+    if err := db.Where("id = ?", testUser.Id).Find(&testUserAfter).Error; err != nil {
         t.Errorf("User is no longer in the database")
     }
     if testUserAfter.Picture != newPictureURL {
@@ -443,6 +453,7 @@ func TestAddFriendEndpoint(t *testing.T) {
     defer resetTables()
 
     testUser4 := User{
+        Id:        420,
         Uid:       "420",
         Name:      "Snoop Dogg",
         FirstName: "Snoop",
@@ -454,6 +465,7 @@ func TestAddFriendEndpoint(t *testing.T) {
     db.Create(&testUser4)
 
     testUser1 := User{
+        Id:        12345,
         Uid:       "12345",
         Name:      "Jayden Smith",
         FirstName: "Jayden",
@@ -471,7 +483,7 @@ func TestAddFriendEndpoint(t *testing.T) {
     }
 
     log.Println("Make test user 4 and test user 1 friends")
-    response := addFriendEndpoint(testUser1, AddFriendRequest{Uid: "420"})
+    response := addFriendEndpoint(testUser1, AddFriendRequest{Id: 420})
 
     if response.Success == false {
         t.Errorf("Adding friends didn't succeed when it should have. Error: %v\n", response.Error)
@@ -496,7 +508,7 @@ func TestAddFriendEndpoint(t *testing.T) {
     }
 
     log.Println("Make test user 4 and test user 1 friends again")
-    response = addFriendEndpoint(testUser1, AddFriendRequest{Uid: "420"})
+    response = addFriendEndpoint(testUser1, AddFriendRequest{Id: 420})
 
     if response.Success == true {
         t.Error("Adding friends succeeded when it shouldn't have.")
@@ -525,6 +537,7 @@ func TestAddAndGetMessagesWithUser(t *testing.T) {
     defer resetTables()
 
     user1 := User{
+        Id:        420,
         Uid:       "420",
         Name:      "Snoop Doge",
         FirstName: "Snoop",
@@ -536,6 +549,7 @@ func TestAddAndGetMessagesWithUser(t *testing.T) {
     db.Create(&user1)
 
     user2 := User{
+        Id:        421,
         Uid:       "421",
         Name:      "Peppa Pig",
         FirstName: "Peppa",

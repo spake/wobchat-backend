@@ -8,6 +8,7 @@ import (
 func TestGetSender(t *testing.T) {
     defer resetTables()
     user1 := User{
+        Id:         1,
         Uid:        "1",
         Name:       "Snoop Doge",
         FirstName:  "Snoop",
@@ -18,6 +19,7 @@ func TestGetSender(t *testing.T) {
     db.Create(&user1)
 
     user2 := User{
+        Id:         2,
         Uid:        "2",
         Name:       "Malcolm Turnbull",
         FirstName:  "Malcolm",
@@ -34,7 +36,7 @@ func TestGetSender(t *testing.T) {
     messages := user1.getMessagesWithUser(user2)
 
     log.Println("Check sender")
-    if sender, _ := messages[0].getSender(); sender.Uid != user1.Uid {
+    if sender, _ := messages[0].getSender(); sender.Id != user1.Id {
         t.Error("Wrong sender returned")
     }
 }
@@ -42,6 +44,7 @@ func TestGetSender(t *testing.T) {
 func TestGetRecipientUser(t *testing.T) {
     defer resetTables()
     user1 := User{
+        Id:         1,
         Uid:        "1",
         Name:       "Snoop Doge",
         FirstName:  "Snoop",
@@ -52,6 +55,7 @@ func TestGetRecipientUser(t *testing.T) {
     db.Create(&user1)
 
     user2 := User{
+        Id:         2,
         Uid:        "2",
         Name:       "Malcolm Turnbull",
         FirstName:  "Malcolm",
@@ -68,7 +72,7 @@ func TestGetRecipientUser(t *testing.T) {
     messages := user1.getMessagesWithUser(user2)
 
     log.Println("Check recipient")
-    if recipient, _ := messages[0].getRecipientUser(); recipient.Uid != user2.Uid {
+    if recipient, _ := messages[0].getRecipientUser(); recipient.Id != user2.Id {
         t.Error("Wrong recipient returned")
     }
 }
@@ -77,6 +81,7 @@ func TestListMessagesEndpoint(t *testing.T) {
     defer resetTables()
 
     user1 := User{
+        Id:         1,
         Uid:        "1",
         Name:       "Snoop Doge",
         FirstName:  "Snoop",
@@ -87,6 +92,7 @@ func TestListMessagesEndpoint(t *testing.T) {
     db.Create(&user1)
 
     user2 := User{
+        Id:         2,
         Uid:        "2",
         Name:       "Malcolm Turnbull",
         FirstName:  "Malcolm",
@@ -97,6 +103,7 @@ func TestListMessagesEndpoint(t *testing.T) {
     db.Create(&user2)
 
     user3 := User{
+        Id:         3,
         Uid:        "3",
         Name:       "Shrek",
         FirstName:  "Shrek",
@@ -110,7 +117,7 @@ func TestListMessagesEndpoint(t *testing.T) {
     user1.addMessageToUser(user2, "this is a message from user1 to user2", 1)
 
     log.Println("List the messages between user2 and user1")
-    response := listMessagesEndpoint(user2, "1")
+    response := listMessagesEndpoint(user2, 1)
 
     if response.Error != "" {
         t.Error("Response had error when it shouldn't have")
@@ -122,16 +129,16 @@ func TestListMessagesEndpoint(t *testing.T) {
         if response.Messages[0].Content != "this is a message from user1 to user2" {
             t.Errorf("Message returned had the wrong content: %v\n", response.Messages[0].Content)
         }
-        if sender, _ := response.Messages[0].getSender(); sender.Uid != "1" {
+        if sender, _ := response.Messages[0].getSender(); sender.Id != 1 {
             t.Errorf("Message returned had the wrong senderid: %v\n", response.Messages[0].SenderId)
         }
-        if recipient, _ := response.Messages[0].getRecipientUser(); recipient.Uid != "2" {
+        if recipient, _ := response.Messages[0].getRecipientUser(); recipient.Id != 2 {
             t.Errorf("Message returned had the wrong recipientid: %v\n", response.Messages[0].RecipientId)
         }
     }
 
     log.Println("List the messages between user1 and user2")
-    response = listMessagesEndpoint(user1, "2")
+    response = listMessagesEndpoint(user1, 2)
 
     if response.Error != "" {
         t.Error("Response had error when it shouldn't have")
@@ -143,10 +150,10 @@ func TestListMessagesEndpoint(t *testing.T) {
         if response.Messages[0].Content != "this is a message from user1 to user2" {
             t.Errorf("Message returned had the wrong content: %v\n", response.Messages[0].Content)
         }
-        if sender, _ := response.Messages[0].getSender(); sender.Uid != "1" {
+        if sender, _ := response.Messages[0].getSender(); sender.Id != 1 {
             t.Errorf("Message returned had the wrong senderid: %v\n", response.Messages[0].SenderId)
         }
-        if recipient, _ := response.Messages[0].getRecipientUser(); recipient.Uid != "2" {
+        if recipient, _ := response.Messages[0].getRecipientUser(); recipient.Id != 2 {
             t.Errorf("Message returned had the wrong recipientid: %v\n", response.Messages[0].RecipientId)
         }
     }
@@ -155,7 +162,7 @@ func TestListMessagesEndpoint(t *testing.T) {
     user2.addMessageToUser(user3, "this is a message from user2 to user3", 1)
 
     log.Println("List the messages between user3 and user2")
-    response = listMessagesEndpoint(user3, "2")
+    response = listMessagesEndpoint(user3, 2)
 
     if response.Error != "" {
         t.Error("Response had error when it shouldn't have")
@@ -167,10 +174,10 @@ func TestListMessagesEndpoint(t *testing.T) {
         if response.Messages[0].Content != "this is a message from user2 to user3" {
             t.Errorf("Message returned had the wrong content: %v\n", response.Messages[0].Content)
         }
-        if sender, _ := response.Messages[0].getSender(); sender.Uid != "2" {
+        if sender, _ := response.Messages[0].getSender(); sender.Id != 2 {
             t.Errorf("Message returned had the wrong senderid: %v\n", response.Messages[0].SenderId)
         }
-        if recipient, _ := response.Messages[0].getRecipientUser(); recipient.Uid != "3" {
+        if recipient, _ := response.Messages[0].getRecipientUser(); recipient.Id != 3 {
             t.Errorf("Message returned had the wrong recipientid: %v\n", response.Messages[0].RecipientId)
         }
     }
@@ -179,7 +186,7 @@ func TestListMessagesEndpoint(t *testing.T) {
     user1.addMessageToUser(user2, "this is another message from user1 to user2", 1)
 
     log.Println("List the messages between user2 and user1")
-    response = listMessagesEndpoint(user2, "1")
+    response = listMessagesEndpoint(user2, 1)
 
     if response.Error != "" {
         t.Error("Response had error when it shouldn't have")
@@ -200,7 +207,7 @@ func TestListMessagesEndpoint(t *testing.T) {
     user1.addMessageToUser(user2, "this is a message from user2 to user1", 1)
 
     log.Println("List the messages between user1 and user2")
-    response = listMessagesEndpoint(user1, "2")
+    response = listMessagesEndpoint(user1, 2)
 
     if response.Error != "" {
         t.Error("Response had error when it shouldn't have")
@@ -221,7 +228,7 @@ func TestListMessagesEndpoint(t *testing.T) {
     }
 
     log.Println("List the messages between user1 and a non existent user")
-    response = listMessagesEndpoint(user1, "123")
+    response = listMessagesEndpoint(user1, 123)
     if response.Error != "Friend not found" {
         t.Errorf("Response returned the wrong error. Got error %v\n", response.Error)
     }
@@ -231,6 +238,7 @@ func TestListMessagesEndpoint2(t *testing.T) {
     defer resetTables()
 
     user1 := User{
+        Id:        420,
         Uid:       "420",
         Name:      "Snoop Doge",
         FirstName: "Snoop",
@@ -242,6 +250,7 @@ func TestListMessagesEndpoint2(t *testing.T) {
     db.Create(&user1)
 
     user2 := User{
+        Id:        421,
         Uid:       "421",
         Name:      "Peppa Pig",
         FirstName: "Peppa",
@@ -253,8 +262,8 @@ func TestListMessagesEndpoint2(t *testing.T) {
     db.Create(&user2)
 
     log.Println("Getting lists of messages (expecting it to be empty)")
-    resp1 := listMessagesEndpoint(user1, user2.Uid)
-    resp2 := listMessagesEndpoint(user2, user1.Uid)
+    resp1 := listMessagesEndpoint(user1, user2.Id)
+    resp2 := listMessagesEndpoint(user2, user1.Id)
     if len(resp1.Messages) != 0 {
         t.Errorf("Wrong number of messages; expected 0, found %v\n", len(resp1.Messages))
     }
@@ -268,8 +277,8 @@ func TestListMessagesEndpoint2(t *testing.T) {
     }
 
     log.Println("Getting lists of messages (expecting it to have 1)")
-    resp1 = listMessagesEndpoint(user1, user2.Uid)
-    resp2 = listMessagesEndpoint(user2, user1.Uid)
+    resp1 = listMessagesEndpoint(user1, user2.Id)
+    resp2 = listMessagesEndpoint(user2, user1.Id)
     if len(resp1.Messages) != 1 {
         t.Errorf("Wrong number of messages; expected 1, found %v\n", len(resp1.Messages))
     }
@@ -283,8 +292,8 @@ func TestListMessagesEndpoint2(t *testing.T) {
     }
 
     log.Println("Getting lists of messages (expecting it to have 2)")
-    resp1 = listMessagesEndpoint(user1, user2.Uid)
-    resp2 = listMessagesEndpoint(user2, user1.Uid)
+    resp1 = listMessagesEndpoint(user1, user2.Id)
+    resp2 = listMessagesEndpoint(user2, user1.Id)
     if len(resp1.Messages) != 2 {
         t.Errorf("Wrong number of messages; expected 2, found %v\n", len(resp1.Messages))
     }
@@ -297,6 +306,7 @@ func TestSendMessageEndpoint(t *testing.T) {
     defer resetTables()
 
     user1 := User{
+        Id:         1,
         Uid:        "1",
         Name:       "Snoop Doge",
         FirstName:  "Snoop",
@@ -307,6 +317,7 @@ func TestSendMessageEndpoint(t *testing.T) {
     db.Create(&user1)
 
     user2 := User{
+        Id:         2,
         Uid:        "2",
         Name:       "Malcolm Turnbull",
         FirstName:  "Malcolm",
@@ -321,7 +332,7 @@ func TestSendMessageEndpoint(t *testing.T) {
         Content:     "You are a nice person",
         ContentType: ContentTypeText,
     }
-    resp := sendMessageEndpoint(user1, "2", req)
+    resp := sendMessageEndpoint(user1, 2, req)
 
     if !resp.Success {
         t.Error("Response returned not success when it should have been successful")
@@ -339,10 +350,10 @@ func TestSendMessageEndpoint(t *testing.T) {
         if messages[0].Content != "You are a nice person" {
             t.Errorf("Message returned had the wrong content: %v\n", messages[0].Content)
         }
-        if sender, _ := messages[0].getSender(); sender.Uid != "1" {
+        if sender, _ := messages[0].getSender(); sender.Id != 1 {
             t.Errorf("Message returned had the wrong senderid: %v\n", messages[0].SenderId)
         }
-        if recipient, _ := messages[0].getRecipientUser(); recipient.Uid != "2" {
+        if recipient, _ := messages[0].getRecipientUser(); recipient.Id != 2 {
             t.Errorf("Message returned had the wrong recipientid: %v\n", messages[0].RecipientId)
         }
     }
@@ -352,7 +363,7 @@ func TestSendMessageEndpoint(t *testing.T) {
         Content:     "You are a nice person",
         ContentType: ContentTypeText,
     }
-    resp = sendMessageEndpoint(user1, "1234", req)
+    resp = sendMessageEndpoint(user1, 1234, req)
 
     if resp.Success {
         t.Error("Response returned success when it should have been unsuccessful")
@@ -367,7 +378,7 @@ func TestSendMessageEndpoint(t *testing.T) {
         Content:     "You are a nice person",
         ContentType: 2,
     }
-    resp = sendMessageEndpoint(user1, "2", req)
+    resp = sendMessageEndpoint(user1, 2, req)
 
     if resp.Success {
         t.Error("Response returned success when it should have been unsuccessful")

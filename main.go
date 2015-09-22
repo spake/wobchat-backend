@@ -8,9 +8,6 @@ import (
     _ "github.com/lib/pq"
 )
 
-// Should be set by Bamboo during build
-var bambooBuildNumber string
-
 // store DB in a global :(
 var db gorm.DB
 

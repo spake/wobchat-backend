@@ -34,6 +34,7 @@ type Users []User
 // Smaller version of User without sensitive/unnecessary info, for sending to
 // third parties, like a user's friends
 type PublicUser struct {
+    Id          int     `json:"id"`
     Uid         string  `json:"uid"`
     Name        string  `json:"name"`
     FirstName   string  `json:"firstName"`
@@ -72,6 +73,7 @@ func (user *User) addFriend(friend User) error {
 
 func (user *User) toPublic() PublicUser {
     return PublicUser{
+        Id:         user.Id,
         Uid:        user.Uid,
         Name:       user.Name,
         FirstName:  user.FirstName,
@@ -87,10 +89,7 @@ func (users *Users) toPublic() (publicUsers []PublicUser) {
     return
 }
 
-func (user *User) getMessagesWithUser(otherUser User) Messages {
-    var msgs Messages
-    // do these need to be sorted by time?
-    // need to check if user and otherUser are the same
+func (user *User) getMessagesWithUser(otherUser User) (msgs Messages) {
     db.Where("(sender_id = ? and recipient_id = ?) or (sender_id = ? and recipient_id = ?)", user.Id, otherUser.Id, otherUser.Id, user.Id).Find(&msgs)
     return msgs
 }
@@ -219,7 +218,7 @@ func listFriendsEndpoint(user User) ListFriendsResponse {
  * Adds a friend to the current user.
  */
 type AddFriendRequest struct {
-    Uid     string    `json:"uid"`
+    Id  int `json:"id"`
 }
 
 type AddFriendResponse struct {
@@ -230,7 +229,7 @@ type AddFriendResponse struct {
 
 func addFriendEndpoint(user User, req AddFriendRequest) AddFriendResponse {
     var friend User
-    dbErr := db.Where(&User{Uid: req.Uid}).First(&friend).Error
+    dbErr := db.Where(&User{Id: req.Id}).First(&friend).Error
 
     if dbErr != nil {
         // friend they are trying to add not found

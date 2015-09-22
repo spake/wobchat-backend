@@ -5,6 +5,7 @@ import (
     "errors"
     "log"
     "net/http"
+    "strconv"
     "time"
     
     "github.com/gorilla/mux"
@@ -59,24 +60,28 @@ func (msg *Message) getRecipientUser() (recipient User, err error) {
  */
 
 /*
- * /messages endpoint
+ * /friends/{friendId}/messages endpoint
  */
 
 func messagesHandler(w http.ResponseWriter, r *http.Request) int {
-    log.Println("Handling /messages")
+    log.Println("Handling /friends/{friendId}/messages")
     user, ok := getCurrentUser(r)
     if !ok {
         return http.StatusUnauthorized
     }
 
     vars := mux.Vars(r)
-    friendUid := vars["friendUid"]
+    friendId, err := strconv.Atoi(vars["friendId"])
+    if err != nil || friendId <= 0 {
+        log.Println("Friend ID not positive integer")
+        return http.StatusBadRequest
+    }
 
     var resp interface{}
 
     switch r.Method {
     case "GET":
-        resp = listMessagesEndpoint(user, friendUid)
+        resp = listMessagesEndpoint(user, friendId)
     case "POST":
         decoder := json.NewDecoder(r.Body)
         var req SendMessageRequest
@@ -85,7 +90,7 @@ func messagesHandler(w http.ResponseWriter, r *http.Request) int {
             log.Println("JSON decoding failed")
             return http.StatusBadRequest
         }
-        resp = sendMessageEndpoint(user, friendUid, req)
+        resp = sendMessageEndpoint(user, friendId, req)
     default:
         return http.StatusMethodNotAllowed
     }
@@ -95,7 +100,7 @@ func messagesHandler(w http.ResponseWriter, r *http.Request) int {
 }
 
 /*
- * GET /messages/{friendUid}
+ * GET /friends/{friendId}/messages
  * Gets a list of the messages between the current user and the specified friend.
  */
 type ListMessagesResponse struct {
@@ -103,10 +108,15 @@ type ListMessagesResponse struct {
     Error    string      `json:"error"`
 }
 
-func listMessagesEndpoint(user User, friendUid string) ListMessagesResponse {
+func listMessagesEndpoint(user User, friendId int) ListMessagesResponse {
+    if friendId == user.Id {
+        return ListMessagesResponse{
+            Error:  "You can't list messages with yourself",
+        }
+    }
+
     var friend User
-    dbErr := db.Where(&User{Uid: friendUid}).First(&friend).Error
-    
+    dbErr := db.Where(&User{Id: friendId}).First(&friend).Error
 
     if dbErr != nil {
         // friend they are trying to list messages between not found'
@@ -123,7 +133,7 @@ func listMessagesEndpoint(user User, friendUid string) ListMessagesResponse {
 }
 
 /*
- * POST /messages/{friendUid}
+ * POST /friends/{friendId}/messages
  * Sends a message from the current user to the specified friend
  */
 type SendMessageRequest struct {
@@ -136,9 +146,16 @@ type SendMessageResponse struct {
     Error   string      `json:"error"`
 }
 
-func sendMessageEndpoint(user User, friendUid string, req SendMessageRequest) SendMessageResponse {
+func sendMessageEndpoint(user User, friendId int, req SendMessageRequest) SendMessageResponse {
+    if friendId == user.Id {
+        return SendMessageResponse{
+            Success:    false,
+            Error:      "You can't send messages to yourself",
+        }
+    }
+
     var friend User
-    dbErr := db.Where(&User{Uid: friendUid}).First(&friend).Error
+    dbErr := db.Where(&User{Id: friendId}).First(&friend).Error
 
     if dbErr != nil {
         // friend they are trying to send message to not found
