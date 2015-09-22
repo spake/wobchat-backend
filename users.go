@@ -34,6 +34,7 @@ type Users []User
 // Smaller version of User without sensitive/unnecessary info, for sending to
 // third parties, like a user's friends
 type PublicUser struct {
+    Id          int     `json:"id"`
     Uid         string  `json:"uid"`
     Name        string  `json:"name"`
     FirstName   string  `json:"firstName"`
@@ -72,6 +73,7 @@ func (user *User) addFriend(friend User) error {
 
 func (user *User) toPublic() PublicUser {
     return PublicUser{
+        Id:         user.Id,
         Uid:        user.Uid,
         Name:       user.Name,
         FirstName:  user.FirstName,
@@ -219,7 +221,7 @@ func listFriendsEndpoint(user User) ListFriendsResponse {
  * Adds a friend to the current user.
  */
 type AddFriendRequest struct {
-    Uid     string    `json:"uid"`
+    Id  int `json:"id"`
 }
 
 type AddFriendResponse struct {
@@ -230,7 +232,7 @@ type AddFriendResponse struct {
 
 func addFriendEndpoint(user User, req AddFriendRequest) AddFriendResponse {
     var friend User
-    dbErr := db.Where(&User{Uid: req.Uid}).First(&friend).Error
+    dbErr := db.Where(&User{Id: req.Id}).First(&friend).Error
 
     if dbErr != nil {
         // friend they are trying to add not found

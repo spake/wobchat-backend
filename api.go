@@ -40,7 +40,7 @@ func setupAPIHandlers() *mux.Router {
     router := mux.NewRouter().StrictSlash(true)
 
     router.Handle("/friends", APIHandler(friendsHandler))
-    router.Handle("/messages/{friendUid}", APIHandler(messagesHandler))
+    router.Handle("/messages/{friendId:[0-9]+}", APIHandler(messagesHandler))
 
     return router
 }
