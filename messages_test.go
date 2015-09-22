@@ -5,9 +5,6 @@ import (
     "log"
 )
 
-//things to fix:
-// need to finish TestSendMessageEndpoint
-
 func TestGetSender(t *testing.T) {
     defer resetTables()
     user1 := User{
