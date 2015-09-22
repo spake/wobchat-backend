@@ -19,7 +19,7 @@ type Config struct {
 func setupConfig() (cfg Config) {
     err := gcfg.ReadFileInto(&cfg, ConfigFile)
     if err != nil {
-        log.Printf("Failed to open config file %v\n", ConfigFile)
+        log.Printf("Failed to open config file %v; did you try copying the example one?\n", ConfigFile)
         panic(err)
     }
 
