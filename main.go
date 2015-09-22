@@ -40,6 +40,6 @@ func main() {
 
     // Set up HTTP handlers
     log.Println("Starting HTTP server")
-    setupAPIHandlers()
-    http.ListenAndServe("127.0.0.1:8000", nil)
+    router := setupAPIHandlers()
+    http.ListenAndServe("127.0.0.1:8000", router)
 }

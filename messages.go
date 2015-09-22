@@ -6,6 +6,8 @@ import (
     "log"
     "net/http"
     "time"
+    
+    "github.com/gorilla/mux"
 )
 
 type ContentType int
@@ -67,13 +69,13 @@ func messagesHandler(w http.ResponseWriter, r *http.Request) int {
         return http.StatusUnauthorized
     }
 
+    vars := mux.Vars(r)
+    friendUid := vars["friendUid"]
+
     var resp interface{}
 
     switch r.Method {
     case "GET":
-        r.ParseForm()
-        //TODO: what if this isn't given?
-        friendUid := r.FormValue("f")
         resp = listMessagesEndpoint(user, friendUid)
     case "POST":
         decoder := json.NewDecoder(r.Body)
@@ -83,7 +85,7 @@ func messagesHandler(w http.ResponseWriter, r *http.Request) int {
             log.Println("JSON decoding failed")
             return http.StatusBadRequest
         }
-        resp = sendMessageEndpoint(user, req)
+        resp = sendMessageEndpoint(user, friendUid, req)
     default:
         return http.StatusMethodNotAllowed
     }
@@ -125,7 +127,6 @@ func listMessagesEndpoint(user User, friendUid string) ListMessagesResponse {
  * Sends a message from the current user to the specified friend
  */
 type SendMessageRequest struct {
-    Uid         string      `json:"uid"`
     Content     string      `json:"content"`
     ContentType ContentType `json:"contentType"`
 }
@@ -135,9 +136,9 @@ type SendMessageResponse struct {
     Error   string      `json:"error"`
 }
 
-func sendMessageEndpoint(user User, req SendMessageRequest) SendMessageResponse {
+func sendMessageEndpoint(user User, friendUid string, req SendMessageRequest) SendMessageResponse {
     var friend User
-    dbErr := db.Where(&User{Uid: req.Uid}).First(&friend).Error
+    dbErr := db.Where(&User{Uid: friendUid}).First(&friend).Error
 
     if dbErr != nil {
         // friend they are trying to send message to not found
