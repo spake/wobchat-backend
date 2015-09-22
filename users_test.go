@@ -71,6 +71,53 @@ func TestDeletingUsers(t *testing.T) {
     }
 }
 
+func TestIsFriend(t *testing.T) {
+    defer resetTables()
+
+    testUser1 := User{
+        Id:        12345,
+        Uid:       "12345",
+        Name:      "Jayden Smith",
+        FirstName: "Jayden",
+        LastName:  "Smith",
+        Email:     "poop@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 1")
+    db.Create(&testUser1)
+
+    testUser2 := User{
+        Id:        12346,
+        Uid:       "12346",
+        Name:      "Will Smith",
+        FirstName: "Will",
+        LastName:  "Smith",
+        Email:     "doody@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 2")
+    db.Create(&testUser2)
+
+    log.Println("Check they are not friends")
+    if testUser1.isFriend(testUser2) {
+        t.Error("User 1 is friends with user 2")
+    }
+    if testUser2.isFriend(testUser1) {
+        t.Error("User 2 is friends with user 1")
+    }
+
+    log.Println("Adding them as friends")
+    testUser1.addFriend(testUser2)
+
+    log.Println("Checking they are friends")
+    if !testUser1.isFriend(testUser2) {
+        t.Error("User 1 is not friends with user 2")
+    }
+    if !testUser2.isFriend(testUser1) {
+        t.Error("User 2 is not friends with user 1")
+    }
+}
+
 func TestAddingFriends(t *testing.T) {
     defer resetTables()
 

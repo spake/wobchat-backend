@@ -74,6 +74,14 @@ func (user *User) addFriend(friend User) error {
     }
 }
 
+func (user *User) isFriend(friend User) bool {
+    var uf UserFriend
+    if err := db.Where(&UserFriend{UserId: user.Id, FriendId: friend.Id}).Find(&uf).Error; err != nil {
+        return false
+    }
+    return true
+}
+
 func (user *User) toPublic() PublicUser {
     return PublicUser{
         Id:         user.Id,

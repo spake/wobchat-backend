@@ -111,7 +111,7 @@ type ListMessagesResponse struct {
 func listMessagesEndpoint(user User, friendId int) ListMessagesResponse {
     if friendId == user.Id {
         return ListMessagesResponse{
-            Error:  "You can't list messages with yourself",
+            Error:  "You can't list messages from yourself",
         }
     }
 
@@ -119,16 +119,23 @@ func listMessagesEndpoint(user User, friendId int) ListMessagesResponse {
     dbErr := db.Where(&User{Id: friendId}).First(&friend).Error
 
     if dbErr != nil {
-        // friend they are trying to list messages between not found'
+        // friend they are trying to list messages between not found
         return ListMessagesResponse{
-                  Error:   "Friend not found"}
+            Error:   "Friend not found",
+        }
+    }
+
+    if !user.isFriend(friend) {
+        return ListMessagesResponse{
+            Error:  "User is not your friend",
+        }
     }
 
     var messages Messages
     messages = user.getMessagesWithUser(friend)
 
     return ListMessagesResponse{
-        Messages: messages,
+        Messages:   messages,
     }
 }
 
@@ -159,18 +166,27 @@ func sendMessageEndpoint(user User, friendId int, req SendMessageRequest) SendMe
 
     if dbErr != nil {
         // friend they are trying to send message to not found
-        // TODO: check if they are also a friend of that user
         return SendMessageResponse{
-            Success: false,
-            Error:   "Friend not found"}
+            Success:    false,
+            Error:      "Friend not found",
+        }
+    }
+
+    if !user.isFriend(friend) {
+        // users are not friends
+        return SendMessageResponse{
+            Success:    false,
+            Error:      "User is not your friend",
+        }
     }
 
     sendErr := user.addMessageToUser(friend, req.Content, req.ContentType)
 
     if sendErr != nil {
         return SendMessageResponse{
-            Success: false,
-            Error:   sendErr.Error()}
+            Success:    false,
+            Error:      sendErr.Error(),
+        }
     }
 
     return SendMessageResponse{Success: true}

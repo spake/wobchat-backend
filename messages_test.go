@@ -113,11 +113,28 @@ func TestListMessagesEndpoint(t *testing.T) {
     }
     db.Create(&user3)
 
+    log.Println("List the messages between user2 and user1 (not friends)")
+    response := listMessagesEndpoint(user2, 1)
+    if response.Error == "" {
+        t.Error("Listing messages should fail when users aren't friends")
+    }
+
+    log.Println("List the messages between user1 and user1 (same user)")
+    response = listMessagesEndpoint(user2, 2)
+    if response.Error == "" {
+        t.Error("Listing messages should fail when users are the same")
+    }
+
+    log.Println("Adding users as friends")
+    user1.addFriend(user2)
+    user1.addFriend(user3)
+    user2.addFriend(user3)
+
     log.Println("Add a message from user1 to user2")
     user1.addMessageToUser(user2, "this is a message from user1 to user2", 1)
 
     log.Println("List the messages between user2 and user1")
-    response := listMessagesEndpoint(user2, 1)
+    response = listMessagesEndpoint(user2, 1)
 
     if response.Error != "" {
         t.Error("Response had error when it shouldn't have")
@@ -234,74 +251,6 @@ func TestListMessagesEndpoint(t *testing.T) {
     }
 }
 
-func TestListMessagesEndpoint2(t *testing.T) {
-    defer resetTables()
-
-    user1 := User{
-        Id:        420,
-        Uid:       "420",
-        Name:      "Snoop Doge",
-        FirstName: "Snoop",
-        LastName:  "Doge",
-        Email:     "higher@gmail.com",
-        Picture:   "42keks"}
-
-    log.Println("Creating test user 1")
-    db.Create(&user1)
-
-    user2 := User{
-        Id:        421,
-        Uid:       "421",
-        Name:      "Peppa Pig",
-        FirstName: "Peppa",
-        LastName:  "Pig",
-        Email:     "p.pig@gmail.com",
-        Picture:   "someurl"}
-
-    log.Println("Creating test user 2")
-    db.Create(&user2)
-
-    log.Println("Getting lists of messages (expecting it to be empty)")
-    resp1 := listMessagesEndpoint(user1, user2.Id)
-    resp2 := listMessagesEndpoint(user2, user1.Id)
-    if len(resp1.Messages) != 0 {
-        t.Errorf("Wrong number of messages; expected 0, found %v\n", len(resp1.Messages))
-    }
-    if len(resp2.Messages) != 0 {
-        t.Errorf("Wrong number of messages; expected 0, found %v\n", len(resp2.Messages))
-    }
-
-    log.Println("Adding message")
-    if err := user1.addMessageToUser(user2, "hello", ContentTypeText); err != nil {
-        t.Errorf("Failed to add message")
-    }
-
-    log.Println("Getting lists of messages (expecting it to have 1)")
-    resp1 = listMessagesEndpoint(user1, user2.Id)
-    resp2 = listMessagesEndpoint(user2, user1.Id)
-    if len(resp1.Messages) != 1 {
-        t.Errorf("Wrong number of messages; expected 1, found %v\n", len(resp1.Messages))
-    }
-    if len(resp2.Messages) != 1 {
-        t.Errorf("Wrong number of messages; expected 1, found %v\n", len(resp2.Messages))
-    }
-
-    log.Println("Adding another message")
-    if err := user2.addMessageToUser(user1, "yo", ContentTypeText); err != nil {
-        t.Errorf("Failed to add message")
-    }
-
-    log.Println("Getting lists of messages (expecting it to have 2)")
-    resp1 = listMessagesEndpoint(user1, user2.Id)
-    resp2 = listMessagesEndpoint(user2, user1.Id)
-    if len(resp1.Messages) != 2 {
-        t.Errorf("Wrong number of messages; expected 2, found %v\n", len(resp1.Messages))
-    }
-    if len(resp2.Messages) != 2 {
-        t.Errorf("Wrong number of messages; expected 2, found %v\n", len(resp2.Messages))
-    }
-}
-
 func TestSendMessageEndpoint(t *testing.T) {
     defer resetTables()
 
@@ -327,12 +276,37 @@ func TestSendMessageEndpoint(t *testing.T) {
     }
     db.Create(&user2)
 
-    log.Println("Send a message from user1 to user2")
+    log.Println("Send a message from user1 to user2 (not friends)")
     req := SendMessageRequest{
+        Content:        "asept frend request plz",
+        ContentType:    ContentTypeText,
+    }
+    resp := sendMessageEndpoint(user1, 2, req)
+
+    if resp.Success {
+        t.Error("Users shouldn't be able to send messages to users they aren't friends with")
+    }
+
+    log.Println("Send a message from user1 to user1 (same user)")
+    req = SendMessageRequest{
+        Content:        "i'm so lonely",
+        ContentType:    ContentTypeText,
+    }
+    resp = sendMessageEndpoint(user1, 1, req)
+
+    if resp.Success {
+        t.Error("Users shouldn't be able to send messages to themselves")
+    }
+
+    log.Println("Adding users as friends")
+    user1.addFriend(user2)
+
+    log.Println("Send a message from user1 to user2")
+    req = SendMessageRequest{
         Content:     "You are a nice person",
         ContentType: ContentTypeText,
     }
-    resp := sendMessageEndpoint(user1, 2, req)
+    resp = sendMessageEndpoint(user1, 2, req)
 
     if !resp.Success {
         t.Error("Response returned not success when it should have been successful")
