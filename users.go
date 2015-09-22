@@ -210,6 +210,7 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) int {
  * Gets a list of the current user's friends.
  */
 type ListFriendsResponse struct {
+    Success bool            `json:"success"`
     Friends []PublicUser    `json:"friends"`
 }
 
@@ -218,7 +219,8 @@ func listFriendsEndpoint(user User) ListFriendsResponse {
     friends = user.getFriends()
 
     resp := ListFriendsResponse{
-        Friends: friends.toPublic(),
+        Success:    true,
+        Friends:    friends.toPublic(),
     }
 
     return resp
