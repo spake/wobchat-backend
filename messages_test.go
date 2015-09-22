@@ -226,7 +226,7 @@ func TestListMessagesEndpoint(t *testing.T) {
     log.Println("List the messages between user1 and a non existent user")
     response = listMessagesEndpoint(user1, "123")
     if response.Error != "Friend not found" {
-        t.Errorf("Should have returned an error that friend couldn't be found")
+        t.Errorf("Response returned the wrong error. Got error %v\n", response.Error)
     }
 }
 
@@ -298,4 +298,85 @@ func TestListMessagesEndpoint2(t *testing.T) {
 
 func TestSendMessageEndpoint(t *testing.T) {
     defer resetTables()
+
+    user1 := User{
+        Uid:        "1",
+        Name:       "Snoop Doge",
+        FirstName:  "Snoop",
+        LastName:   "Doge",
+        Email:      "poop@gmail.com",
+        Picture:    "blah",
+    }
+    db.Create(&user1)
+
+    user2 := User{
+        Uid:        "2",
+        Name:       "Malcolm Turnbull",
+        FirstName:  "Malcolm",
+        LastName:   "Turnbull",
+        Email:      "pm@gmail.com",
+        Picture:    "hehe",
+    }
+    db.Create(&user2)
+
+    log.Println("Send a message from user1 to user2")
+    req := SendMessageRequest{
+        Content:     "You are a nice person",
+        ContentType: ContentTypeText,
+    }
+    resp := sendMessageEndpoint(user1, "2", req)
+
+    if !resp.Success {
+        t.Error("Response returned not success when it should have been successful")
+    }
+
+    if resp.Error != "" {
+        t.Error("Response returned an error when it shouldn't have")
+    }
+
+    messages := user1.getMessagesWithUser(user2)
+
+    if len(messages) != 1 {
+        t.Errorf("1 message expected, found %v\n", len(messages))
+    } else {
+        if messages[0].Content != "You are a nice person" {
+            t.Errorf("Message returned had the wrong content: %v\n", messages[0].Content)
+        }
+        if sender, _ := messages[0].getSender(); sender.Uid != "1" {
+            t.Errorf("Message returned had the wrong senderid: %v\n", messages[0].SenderId)
+        }
+        if recipient, _ := messages[0].getRecipientUser(); recipient.Uid != "2" {
+            t.Errorf("Message returned had the wrong recipientid: %v\n", messages[0].RecipientId)
+        }
+    }
+
+    log.Println("Send a message from user1 to a non existent user")
+    req = SendMessageRequest{
+        Content:     "You are a nice person",
+        ContentType: ContentTypeText,
+    }
+    resp = sendMessageEndpoint(user1, "1234", req)
+
+    if resp.Success {
+        t.Error("Response returned success when it should have been unsuccessful")
+    }
+
+    if resp.Error != "Friend not found" {
+        t.Errorf("Response returned the wrong error. Got error %v\n", resp.Error)
+    }
+
+    log.Println("Send a message from user1 to user2 with an invalid content type")
+    req = SendMessageRequest{
+        Content:     "You are a nice person",
+        ContentType: 2,
+    }
+    resp = sendMessageEndpoint(user1, "2", req)
+
+    if resp.Success {
+        t.Error("Response returned success when it should have been unsuccessful")
+    }
+
+    if resp.Error != "Invalid content type" {
+        t.Errorf("Response returned the wrong error. Got error %v\n", resp.Error)
+    }
 }
