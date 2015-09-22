@@ -567,7 +567,7 @@ func TestAddFriendEndpoint(t *testing.T) {
     }
 }
 
-func TestMessages(t *testing.T) {
+func TestAddAndGetMessagesWithUser(t *testing.T) {
     defer resetTables()
 
     user1 := User{
