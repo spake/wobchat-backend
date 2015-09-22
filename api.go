@@ -4,6 +4,8 @@ import (
     "encoding/json"
     "io"
     "net/http"
+
+    "github.com/gorilla/mux"
 )
 
 // Sends a JSON response, and sets up necessary headers
@@ -34,8 +36,13 @@ func (handler APIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func setupAPIHandlers() {
-    http.HandleFunc("/about", aboutHandler)
-    http.HandleFunc("/verify", verifyHandler)
-    http.Handle("/friends", APIHandler(friendsHandler))
+func setupAPIHandlers() *mux.Router {
+    router := mux.NewRouter().StrictSlash(true)
+
+    router.HandleFunc("/about", aboutHandler)
+    router.HandleFunc("/verify", verifyHandler)
+    router.Handle("/friends", APIHandler(friendsHandler))
+    router.Handle("/messages/{friendUid}", APIHandler(messagesHandler))
+
+    return router
 }

@@ -89,6 +89,8 @@ func (users *Users) toPublic() (publicUsers []PublicUser) {
 
 func (user *User) getMessagesWithUser(otherUser User) Messages {
     var msgs Messages
+    // do these need to be sorted by time?
+    // need to check if user and otherUser are the same
     db.Where("(sender_id = ? and recipient_id = ?) or (sender_id = ? and recipient_id = ?)", user.Id, otherUser.Id, otherUser.Id, user.Id).Find(&msgs)
     return msgs
 }
@@ -117,8 +119,6 @@ func (user *User) addMessageToUser(otherUser User, content string, contentType C
  */
 func getUserFromInfo(info GoogleInfo) (user User) {
     log.Printf("Getting user %v\n", info.ID)
-
-    log.Println(db)
 
     // check if user already exists
     if err := db.Where(&User{Uid: info.ID}).First(&user).Error; err != nil {
@@ -181,7 +181,7 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) int {
         resp = listFriendsEndpoint(user)
     case "POST":
         decoder := json.NewDecoder(r.Body)
-        var req AddFriendsRequest
+        var req AddFriendRequest
         err := decoder.Decode(&req)
         if err != nil {
             return http.StatusBadRequest
@@ -218,41 +218,36 @@ func listFriendsEndpoint(user User) ListFriendsResponse {
  * POST /friends
  * Adds a friend to the current user.
  */
-type AddFriendsRequest struct {
+type AddFriendRequest struct {
     Uid     string    `json:"uid"`
 }
 
-type AddFriendsResponse struct {
+type AddFriendResponse struct {
     Success bool        `json:"success"`
     Error   string      `json:"error"`
     Friend  PublicUser  `json:"friend"`
 }
 
-func addFriendEndpoint(user User, req AddFriendsRequest) AddFriendsResponse {
+func addFriendEndpoint(user User, req AddFriendRequest) AddFriendResponse {
     var friend User
     dbErr := db.Where(&User{Uid: req.Uid}).First(&friend).Error
 
-    var resp AddFriendsResponse
-
-    log.Println("DB Error: ", dbErr)
-
-    if dbErr == nil {
-        addErr := user.addFriend(friend)
-
-        if addErr != nil {
-            resp = AddFriendsResponse{
-                Success: false,
-                Error:   addErr.Error()}
-        } else {
-            resp = AddFriendsResponse{
-                Success: true,
-                Friend: friend.toPublic()}
-        }
-    } else {
+    if dbErr != nil {
         // friend they are trying to add not found
-        resp = AddFriendsResponse{
+        return AddFriendResponse{
                 Success: false,
                 Error:   "Friend not found"}
     }
-    return resp
+    
+    addErr := user.addFriend(friend)
+
+    if addErr != nil {
+        return AddFriendResponse{
+            Success: false,
+            Error:   addErr.Error()}
+    }
+
+    return AddFriendResponse{
+        Success: true,
+        Friend: friend.toPublic()}
 }
