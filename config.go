@@ -6,6 +6,8 @@ import (
     "gopkg.in/gcfg.v1"
 )
 
+const ConfigFile = "/etc/wobchat-backend.conf"
+
 type Config struct {
     Database struct {
         Type                    string
@@ -15,9 +17,9 @@ type Config struct {
 }
 
 func setupConfig() (cfg Config) {
-    err := gcfg.ReadFileInto(&cfg, "wobchat-backend.gcfg")
+    err := gcfg.ReadFileInto(&cfg, ConfigFile)
     if err != nil {
-        log.Println("Failed to open config")
+        log.Printf("Failed to open config file %v\n", ConfigFile)
         panic(err)
     }
 
