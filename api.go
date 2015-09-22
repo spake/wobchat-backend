@@ -39,8 +39,6 @@ func (handler APIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func setupAPIHandlers() *mux.Router {
     router := mux.NewRouter().StrictSlash(true)
 
-    router.HandleFunc("/about", aboutHandler)
-    router.HandleFunc("/verify", verifyHandler)
     router.Handle("/friends", APIHandler(friendsHandler))
     router.Handle("/messages/{friendUid}", APIHandler(messagesHandler))
 
