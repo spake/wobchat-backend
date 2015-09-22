@@ -679,12 +679,12 @@ func TestAddAndGetMessagesWithUser(t *testing.T) {
     }
 
     log.Println("Adding invalid messages")
-    if err := user1.addMessageToUser(user2, "this is messed up", -1); err == nil {
+    if _, err := user1.addMessageToUser(user2, "this is messed up", -1); err == nil {
         t.Errorf("Should have failed with an invalid content type")
     }
 
     log.Println("Adding empty message")
-    if err := user1.addMessageToUser(user2, "", ContentTypeText); err != nil {
+    if _, err := user1.addMessageToUser(user2, "", ContentTypeText); err != nil {
         t.Errorf("Shouldn't have failed on empty message")
     }
 
@@ -701,10 +701,10 @@ func TestAddAndGetMessagesWithUser(t *testing.T) {
     text2 := "top kek"
 
     log.Println("Adding normal messages")
-    if err := user2.addMessageToUser(user1, text1, ContentTypeText); err != nil {
+    if _, err := user2.addMessageToUser(user1, text1, ContentTypeText); err != nil {
         t.Errorf("Shouldn't have failed on normal message")
     }
-    if err := user1.addMessageToUser(user2, text2, ContentTypeText); err != nil {
+    if _, err := user1.addMessageToUser(user2, text2, ContentTypeText); err != nil {
         t.Errorf("Shouldn't have failed on normal message")
     }
 
@@ -742,4 +742,6 @@ func TestAddAndGetMessagesWithUser(t *testing.T) {
     if recipient, err := messages1[0].getRecipientUser(); err != nil || recipient.Id != messages1[0].RecipientId {
         t.Errorf("Invalid recipient ID")
     }
+
+    // TODO: test ID returned by addMessageToUser when we have a function to get message by ID
 }
