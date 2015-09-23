@@ -1,6 +1,7 @@
 package main
 
 import (
+    "fmt"
     "log"
     "net/http"
 
@@ -14,11 +15,10 @@ var db gorm.DB
 var cfg Config
 
 func main() {
+    cfg = setupConfig()
+
     log.Println("Creating certificate cache")
     cache = newMemoryCache()
-
-    log.Println("Reading config file")
-    cfg = setupConfig()
 
     log.Println("Opening DB connection")
 
@@ -39,6 +39,9 @@ func main() {
 
     // Set up HTTP handlers
     log.Println("Starting HTTP server")
+    address := fmt.Sprintf("127.0.0.1:%d", cfg.Server.HTTPPort)
     router := setupAPIHandlers()
-    http.ListenAndServe("127.0.0.1:8000", router)
+
+    log.Printf("Listening on %v\n", address)
+    http.ListenAndServe(address, router)
 }

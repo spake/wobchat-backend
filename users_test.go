@@ -904,3 +904,29 @@ func TestListUsersEndpoint(t *testing.T) {
         }
     }
 }
+
+func TestGetMeEndpoint(t *testing.T) {
+    defer resetTables()
+
+    user1 := User{
+        Id:        420,
+        Uid:       "420",
+        Name:      "Snoop Doge",
+        FirstName: "Snoop",
+        LastName:  "Doge",
+        Email:     "higher@gmail.com",
+        Picture:   "42keks"}
+
+    log.Println("Creating test user 1")
+    db.Create(&user1)
+    
+    resp := getMeEndpoint(user1)
+
+    // this should always work...
+    if !resp.Success || resp.Error != "" {
+        t.Errorf("Get me endpoint shouldn't fail")
+    }
+    if resp.User != user1.toPublic() {
+        t.Errorf("Get me endpoint's public user didn't match")
+    }
+}

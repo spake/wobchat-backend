@@ -202,6 +202,10 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) int {
         if err != nil {
             return http.StatusBadRequest
         }
+        if req.Id <= 0 {
+            log.Println("Friend ID not positive integer")
+            return http.StatusBadRequest
+        }
         resp = addFriendEndpoint(user, req)
     default:
         return http.StatusMethodNotAllowed
@@ -370,6 +374,30 @@ func usersHandler(w http.ResponseWriter, r *http.Request) int {
 }
 
 /*
+ * /me endpoint
+ */
+
+func meHandler(w http.ResponseWriter, r *http.Request) int {
+    log.Println("Handling /me")
+    user, ok := getCurrentUser(r)
+    if !ok {
+        return http.StatusUnauthorized
+    }
+
+    var resp interface{}
+
+    switch r.Method {
+    case "GET":
+        resp = getMeEndpoint(user)
+    default:
+        return http.StatusMethodNotAllowed
+    }
+
+    sendJSONResponse(w, resp)
+    return http.StatusOK
+}
+
+/*
  * GET /users
  * Gets a list of all users whose names match the given query.
  */
@@ -388,4 +416,22 @@ func listUsersEndpoint(q string) ListUsersResponse {
     }
 
     return resp
+}
+
+/*
+ * GET /me
+ * Gets information about the current user.
+ */
+type GetMeResponse struct {
+    Success bool        `json:"success"`
+    Error   string      `json:"error"`
+    User    PublicUser  `json:"user"`
+}
+
+func getMeEndpoint(currentUser User) GetMeResponse {
+    return GetMeResponse{
+        Success:    true,
+        Error:      "",
+        User:       currentUser.toPublic(),
+    }
 }

@@ -11,9 +11,6 @@ import (
 var printQueries = flag.Bool("printqueries", false, "Print all queries run through the database")
 
 func TestMain(m *testing.M) {
-    flag.Parse()
-
-    log.Println("Reading config file")
     cfg = setupConfig()
 
     log.Println("Opening DB connection")
