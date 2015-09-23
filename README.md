@@ -7,7 +7,26 @@ You should have a config file in `/etc/wobchat-backend.conf` specifying things l
 API Documentation
 =================
 
+Enum Values
+===========
+##`ContentType`
+>A field in the Message struct. Defines what type of message the message is.
+>
+| Name            | Value | Description                   |
+| --------------- |:-----:|:----------------------------- |
+| ContentTypeText |   1   | The message is a text message |
 
+##`RecipientType`
+>A field in the Message struct. Defines what type of entity the message is being sent to.
+>
+| Name              | Value | Description                    |
+| ----------------- |:-----:|:------------------------------ |
+| RecipientTypeText |   1   | The recipient is a single user |
+
+
+
+Endpoints
+=========
 Friends
 -------
 
