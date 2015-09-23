@@ -6,6 +6,7 @@ import (
     "log"
     "net/http"
     "strconv"
+    "strings"
     "time"
 
     "github.com/gorilla/mux"
@@ -167,6 +168,11 @@ func getCurrentUser(r *http.Request) (user User, ok bool) {
 
     user = getUserFromInfo(info)
     return user, true
+}
+
+func searchUsernames(q string) (users Users) {
+    db.Where("upper(name) LIKE ?", "%%"+strings.ToUpper(q)+"%%").Find(&users)
+    return users
 }
 
 /*
@@ -335,4 +341,51 @@ func getFriendEndpoint(user User, friendId int) GetFriendResponse {
         Success:    true,
         Friend:     friend.toPublic(),
     }
+}
+
+/*
+ * /users endpoint
+ */
+
+func usersHandler(w http.ResponseWriter, r *http.Request) int {
+    log.Println("Handling /users")
+    user, ok := getCurrentUser(r)
+    if !ok {
+        return http.StatusUnauthorized
+    }
+
+    var resp interface{}
+
+    q := r.FormValue("q")
+
+    switch r.Method {
+    case "GET":
+        resp = listUsersEndpoint(user, q)
+    default:
+        return http.StatusMethodNotAllowed
+    }
+
+    sendJSONResponse(w, resp)
+    return http.StatusOK
+}
+
+/*
+ * GET /users
+ * Gets a list of all users whose names match the given query.
+ */
+type ListUsersResponse struct {
+    Success bool            `json:"success"`
+    Users []PublicUser      `json:"users"`
+}
+
+func listUsersEndpoint(user User, q string) ListUsersResponse {
+    var users Users
+    users = searchUsernames(q)
+
+    resp := ListUsersResponse{
+        Success:    true,
+        Users:    users.toPublic(),
+    }
+
+    return resp
 }

@@ -745,3 +745,54 @@ func TestAddAndGetMessagesWithUser(t *testing.T) {
 
     // TODO: test ID returned by addMessageToUser when we have a function to get message by ID
 }
+
+func TestSearchUsernames(t *testing.T) {
+    defer resetTables()
+
+    log.Println("Listing all users - there should be none")
+    users := searchUsernames("")
+    if len(users) != 0 {
+        t.Errorf("0 users should have been found, found %v\n", len(users))
+    }
+
+    user1 := User{
+        Id:        420,
+        Uid:       "420",
+        Name:      "Snoop Doge",
+        FirstName: "Snoop",
+        LastName:  "Doge",
+        Email:     "higher@gmail.com",
+        Picture:   "42keks"}
+
+    log.Println("Creating test user 1")
+    db.Create(&user1)
+
+    log.Println("Listing all users")
+    users = searchUsernames("")
+    if len(users) != 1 {
+        t.Errorf("1 user should have been found, found %v\n", len(users))
+    }
+
+    user2 := User{
+        Id:        421,
+        Uid:       "421",
+        Name:      "Peppa Pig",
+        FirstName: "Peppa",
+        LastName:  "Pig",
+        Email:     "p.pig@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 2")
+    db.Create(&user2)
+
+    log.Println("Listing all users")
+    users = searchUsernames("")
+    if len(users) != 2 {
+        t.Errorf("2 users should have been found, found %v\n", len(users))
+    }
+}
+
+func TestListUsersEndpoint(t *testing.T) {
+    defer resetTables()
+    //TODO
+}

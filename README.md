@@ -121,5 +121,24 @@ Friends
 
 Users
 -----
-Coming soon to an API near you...
 
+##`/users[?q=partialname]`
+
+###`GET`
+
+>Gets a list of all users whose names match the given query.
+>
+####Response Format:
+    {
+      "success": true,
+      "users": [
+        {
+          "id": 1,
+          "uid": "123456789",
+          "name": "Wayne Wobcke",
+          "firstName": "Wayne",
+          "lastName": "Wobcke",
+          "picture": "https://lh6.googleusercontent.com/something/photo.jpg"
+        }
+      ]
+    }
