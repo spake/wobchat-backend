@@ -349,7 +349,7 @@ func getFriendEndpoint(user User, friendId int) GetFriendResponse {
 
 func usersHandler(w http.ResponseWriter, r *http.Request) int {
     log.Println("Handling /users")
-    user, ok := getCurrentUser(r)
+    _, ok := getCurrentUser(r)
     if !ok {
         return http.StatusUnauthorized
     }
@@ -360,7 +360,7 @@ func usersHandler(w http.ResponseWriter, r *http.Request) int {
 
     switch r.Method {
     case "GET":
-        resp = listUsersEndpoint(user, q)
+        resp = listUsersEndpoint(q)
     default:
         return http.StatusMethodNotAllowed
     }
@@ -378,7 +378,7 @@ type ListUsersResponse struct {
     Users []PublicUser      `json:"users"`
 }
 
-func listUsersEndpoint(user User, q string) ListUsersResponse {
+func listUsersEndpoint(q string) ListUsersResponse {
     var users Users
     users = searchUsernames(q)
 

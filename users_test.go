@@ -771,6 +771,10 @@ func TestSearchUsernames(t *testing.T) {
     users = searchUsernames("")
     if len(users) != 1 {
         t.Errorf("1 user should have been found, found %v\n", len(users))
+    } else {   
+        if users[0].Id != 420 {
+            t.Errorf("User had wrong Id. Expected 420, found %v\n", users[0].Id)
+        }
     }
 
     user2 := User{
@@ -789,10 +793,114 @@ func TestSearchUsernames(t *testing.T) {
     users = searchUsernames("")
     if len(users) != 2 {
         t.Errorf("2 users should have been found, found %v\n", len(users))
+    } else {
+        if users[0].Id != 420 {
+            t.Errorf("User had wrong Id. Expected 420, found %v\n", users[0].Id)
+        }
+        if users[1].Id != 421 {
+            t.Errorf("User had wrong Id. Expected 421, found %v\n", users[1].Id)
+        }
+    }
+
+    log.Println("Listing users matching 'Peppa Pig'")
+    users = searchUsernames("Peppa Pig")
+    if len(users) != 1 {
+        t.Errorf("1 user should have been found, found %v\n", len(users))
+    } else {
+        if users[0].Id != 421 {
+            t.Errorf("User had wrong Id. Expected 421, found %v\n", users[0].Id)
+        }
+    }
+
+    log.Println("Listing users matching 'Snoop'")
+    users = searchUsernames("Snoop")
+    if len(users) != 1 {
+        t.Errorf("1 user should have been found, found %v\n", len(users))
+    } else {
+        if users[0].Id != 420 {
+            t.Errorf("User had wrong Id. Expected 420, found %v\n", users[0].Id)
+        }
+    }
+
+    log.Println("Listing users matching 'p'")
+    users = searchUsernames("p")
+    if len(users) != 2 {
+        t.Errorf("2 users should have been found, found %v\n", len(users))
+    } else {
+        if users[0].Id != 420 {
+            t.Errorf("User had wrong Id. Expected 420, found %v\n", users[0].Id)
+        }
+        if users[1].Id != 421 {
+            t.Errorf("User had wrong Id. Expected 421, found %v\n", users[1].Id)
+        }
+    }
+
+    log.Println("Listing users matching 'sno'")
+    users = searchUsernames("sno")
+    if len(users) != 1 {
+        t.Errorf("1 user should have been found, found %v\n", len(users))
+    } else {
+        if users[0].Id != 420 {
+            t.Errorf("User had wrong Id. Expected 420, found %v\n", users[0].Id)
+        }
+    }
+
+    log.Println("Listing users matching 'ig'")
+    users = searchUsernames("ig")
+    if len(users) != 1 {
+        t.Errorf("1 user should have been found, found %v\n", len(users))
+    } else {
+        if users[0].Id != 421 {
+            t.Errorf("User had wrong Id. Expected 421, found %v\n", users[0].Id)
+        }
+    }
+
+    log.Println("Listing users matching 'Snooo'")
+    users = searchUsernames("Snooo")
+    if len(users) != 0 {
+        t.Errorf("0 users should have been found, found %v\n", len(users))
     }
 }
 
 func TestListUsersEndpoint(t *testing.T) {
     defer resetTables()
-    //TODO
+
+    user1 := User{
+        Id:        420,
+        Uid:       "420",
+        Name:      "Snoop Doge",
+        FirstName: "Snoop",
+        LastName:  "Doge",
+        Email:     "higher@gmail.com",
+        Picture:   "42keks"}
+
+    log.Println("Creating test user 1")
+    db.Create(&user1)
+
+    user2 := User{
+        Id:        421,
+        Uid:       "421",
+        Name:      "Peppa Pig",
+        FirstName: "Peppa",
+        LastName:  "Pig",
+        Email:     "p.pig@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 2")
+    db.Create(&user2)
+
+    log.Println("Listing users matching 'DOG'")
+    resp := listUsersEndpoint("DOG")
+
+    if !resp.Success {
+        t.Error("Listing users didn't succeed when it should have.")
+    }
+
+    if len(resp.Users) != 1 {
+        t.Errorf("1 user should have been found, found %v\n", len(resp.Users))
+    } else {
+        if resp.Users[0].Id != 420 {
+            t.Errorf("User had wrong Id. Expected 420, found %v\n", resp.Users[0].Id)
+        }
+    }
 }
