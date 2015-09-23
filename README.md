@@ -7,7 +7,18 @@ You should have a config file in `/etc/wobchat-backend.conf` specifying things l
 API Documentation
 =================
 
+Enum Values
+===========
+##`ContentType`
+`ContentTypeText` = 1
 
+##`RecipientType`
+`RecipientTypeUser` = 1
+
+
+
+Endpoints
+=========
 Friends
 -------
 
