@@ -141,6 +141,27 @@ Friends
 Users
 -----
 
+##`/me`
+
+###`GET`
+
+> Gets information about the current user.
+>
+####Response Format:
+    {
+      "success": true,
+      "error": "",
+      "user": {
+        "id": 1,
+        "uid": "123456789",
+        "name": "Wayne Wobcke",
+        "firstName": "Wayne",
+        "lastName": "Wobcke",
+        "picture": "https://lh6.googleusercontent.com/something/photo.jpg"
+      }
+    }
+
+
 ##`/users[?q=partialname]`
 
 ###`GET`
