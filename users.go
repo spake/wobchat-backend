@@ -340,3 +340,45 @@ func getFriendEndpoint(user User, friendId int) GetFriendResponse {
         Friend:     friend.toPublic(),
     }
 }
+
+/*
+ * /me endpoint
+ */
+
+func meHandler(w http.ResponseWriter, r *http.Request) int {
+    log.Println("Handling /me")
+    user, ok := getCurrentUser(r)
+    if !ok {
+        return http.StatusUnauthorized
+    }
+
+    var resp interface{}
+
+    switch r.Method {
+    case "GET":
+        resp = getMeEndpoint(user)
+    default:
+        return http.StatusMethodNotAllowed
+    }
+
+    sendJSONResponse(w, resp)
+    return http.StatusOK
+}
+
+/*
+ * GET /me
+ * Gets information about the current user.
+ */
+type GetMeResponse struct {
+    Success bool        `json:"success"`
+    Error   string      `json:"error"`
+    User    PublicUser  `json:"user"`
+}
+
+func getMeEndpoint(currentUser User) GetMeResponse {
+    return GetMeResponse{
+        Success:    true,
+        Error:      "",
+        User:       currentUser.toPublic(),
+    }
+}
