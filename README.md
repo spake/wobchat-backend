@@ -17,7 +17,7 @@ Enum Values
 | ContentTypeText |   1   | The message is a text message |
 
 ##`RecipientType`
->A field in the Message struct. Defines what type of entity the message is being sent to
+>A field in the Message struct. Defines what type of entity the message is being sent to.
 >
 | Name              | Value | Description                    |
 | ----------------- |:-----:|:------------------------------ |
