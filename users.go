@@ -196,6 +196,10 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) int {
         if err != nil {
             return http.StatusBadRequest
         }
+        if req.Id <= 0 {
+            log.Println("Friend ID not positive integer")
+            return http.StatusBadRequest
+        }
         resp = addFriendEndpoint(user, req)
     default:
         return http.StatusMethodNotAllowed
