@@ -76,26 +76,24 @@ func (user *User) addFriend(friend User) error {
 }
 
 func (user *User) deleteFriend(friend User) error {
-    tx := db.Begin()
-
     var uf1, uf2 UserFriend
 
     // check two-way friendship exists
-    if err := db.Where(&UserFriend{UserId: user.Id, FriendId: friend.Id}).Find(&uf1).Error; err != nil {
-        tx.Rollback()
+    if err := db.Where(&UserFriend{UserId: user.Id, FriendId: friend.Id}).First(&uf1).Error; err != nil {
         return err
     }
-    if err := db.Where(&UserFriend{UserId: friend.Id, FriendId: user.Id}).Find(&uf2).Error; err != nil {
-        tx.Rollback()
+    if err := db.Where(&UserFriend{UserId: friend.Id, FriendId: user.Id}).First(&uf2).Error; err != nil {
         return err
     }
 
+    tx := db.Begin()
+
     // do actual deleting
-    if err := db.Delete(&uf1).Error; err != nil {
+    if err := db.Where("user_id = ? and friend_id = ?", user.Id, friend.Id).Delete(UserFriend{}).Error; err != nil {
         tx.Rollback()
         return err
     }
-    if err := db.Delete(&uf2).Error; err != nil {
+    if err := db.Where("friend_id = ? and user_id = ?", user.Id, friend.Id).Delete(UserFriend{}).Error; err != nil {
         tx.Rollback()
         return err
     }

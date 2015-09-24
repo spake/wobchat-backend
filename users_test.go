@@ -313,6 +313,18 @@ func TestDeletingFriends(t *testing.T) {
     log.Println("Creating test user 2")
     db.Create(&user2)
 
+    user3 := User{
+        Id:        12347,
+        Uid:       "12347",
+        Name:      "Hayden Smith",
+        FirstName: "Hayden",
+        LastName:  "Smith",
+        Email:     "dootdoot@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 3")
+    db.Create(&user3)
+
     log.Println("Trying to delete non-existent friendship")
     if err := user1.deleteFriend(user2); err == nil {
         t.Error("Succeeded in deleting non-existent friendship")
@@ -327,6 +339,9 @@ func TestDeletingFriends(t *testing.T) {
     log.Println("Trying to delete friendship (1)")
     if err := user1.deleteFriend(user2); err != nil {
         t.Errorf("Failed to delete friendship: %v", err)
+    }
+    if user1.isFriend(user2) {
+        t.Error("Friendship wasn't actually deleted")
     }
    
     log.Println("Trying to delete friendship that's already deleted")
@@ -344,6 +359,9 @@ func TestDeletingFriends(t *testing.T) {
     if err := user2.deleteFriend(user1); err != nil {
         t.Errorf("Failed to delete friendship: %v", err)
     }
+    if user2.isFriend(user1) {
+        t.Error("Friendship wasn't actually deleted")
+    }
 
     log.Println("Trying to delete friendship that's already deleted")
     if err := user1.deleteFriend(user2); err == nil {
@@ -356,6 +374,19 @@ func TestDeletingFriends(t *testing.T) {
     log.Println("Trying to delete self as friend")
     if err := user1.deleteFriend(user1); err == nil {
         t.Error("Succeeded in deleting self as friend")
+    }
+
+    log.Println("Ensuring deletion doesn't affect other friendships")
+    user1.addFriend(user2)
+    user1.addFriend(user3)
+    if err := user1.deleteFriend(user2); err != nil {
+        t.Errorf("Failed to delete friendship: %v", err)
+    }
+    if user1.isFriend(user2) {
+        t.Error("Failed to delete friendship")
+    }
+    if !user1.isFriend(user3) {
+        t.Error("Deletion affected the wrong friendship")
     }
 }
 
