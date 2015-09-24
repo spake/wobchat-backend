@@ -95,6 +95,15 @@ Friends
       }
     }
 
+###`DELETE`
+
+>Removes a user from the current user's friends list.
+>
+####Response Format:
+    {
+      "success": true,
+      "error": ""
+    }
 
 ##`/friends/{friendId}/messages`
 
