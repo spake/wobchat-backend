@@ -182,3 +182,48 @@ Users
         }
       ]
     }
+
+Events
+======
+
+Endpoints
+---------
+
+##`/nextEvent`
+
+###`GET`
+
+>Long-polling endpoint; waits for an event.
+>Times out after 60 seconds.
+>
+####Response Format:
+    {
+      "success": true,
+      "error": "",
+      "eventType": 1,
+      "event": {
+        "message": ...
+      }
+    }
+
+> Possible values for `eventType` (and corresponding layouts of `event`) are given below.
+
+Event Types
+-----------
+
+##`EventTypeNewMessage` = 1
+
+>New message received.
+>
+####Event format:
+    {
+      "message": {
+        "id": 3,
+        "content": "Doot doot",
+        "contentType": 1,
+        "senderId": 123,
+        "recipientId": 456,
+        "recipientType": 1,
+        "timestamp": "2015-09-23T02:14:29.945951+10:00"
+      }
+    }

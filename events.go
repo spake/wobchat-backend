@@ -59,6 +59,10 @@ type GetEventResponse struct {
     Event       interface{} `json:"event"`
 }
 
+type EventNewMessage struct {
+    Message Message `json:"message"`
+}
+
 func getEventEndpoint(user User, listener *EventListener) GetEventResponse {
     log.Println("Waiting for event")
 
@@ -92,10 +96,14 @@ func postEventEndpoint(user User, listener *EventListener) PostEventResponse {
         RecipientType:  RecipientTypeUser,
     }
 
+    event := EventNewMessage{
+        Message:    msg,
+    }
+
     listener.Lock.Lock()
     listener.Cond.Broadcast()
     listener.EventType = EventTypeNewMessage
-    listener.Event = msg
+    listener.Event = event
     listener.Lock.Unlock()
 
     return PostEventResponse{
