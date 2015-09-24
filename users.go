@@ -53,26 +53,55 @@ func (user *User) getFriends() Users {
 }
 
 func (user *User) addFriend(friend User) error {
-    if user.Id != friend.Id {
-        tx := db.Begin()
-
-        userFriend := UserFriend{UserId: user.Id, FriendId: friend.Id}
-        if err := tx.Create(&userFriend).Error; err != nil {
-            tx.Rollback()
-            return err
-        }
-
-        userFriend = UserFriend{UserId: friend.Id, FriendId: user.Id}
-        if err := tx.Create(&userFriend).Error; err != nil {
-            tx.Rollback()
-            return err
-        }
-
-        tx.Commit()
-        return nil
-    } else {
+    if user.Id == friend.Id {
         return errors.New("Cannot add yourself as a friend")
     }
+
+    tx := db.Begin()
+
+    userFriend := UserFriend{UserId: user.Id, FriendId: friend.Id}
+    if err := tx.Create(&userFriend).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    userFriend = UserFriend{UserId: friend.Id, FriendId: user.Id}
+    if err := tx.Create(&userFriend).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    tx.Commit()
+    return nil
+}
+
+func (user *User) deleteFriend(friend User) error {
+    tx := db.Begin()
+
+    var uf1, uf2 UserFriend
+
+    // check two-way friendship exists
+    if err := db.Where(&UserFriend{UserId: user.Id, FriendId: friend.Id}).Find(&uf1).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+    if err := db.Where(&UserFriend{UserId: friend.Id, FriendId: user.Id}).Find(&uf2).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    // do actual deleting
+    if err := db.Delete(&uf1).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+    if err := db.Delete(&uf2).Error; err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    tx.Commit()
+    return nil
 }
 
 func (user *User) isFriend(friend User) bool {
@@ -297,6 +326,8 @@ func friendHandler(w http.ResponseWriter, r *http.Request) int {
     switch r.Method {
     case "GET":
         resp = getFriendEndpoint(user, friendId)
+    case "DELETE":
+        resp = deleteFriendEndpoint(user, friendId)
     default:
         return http.StatusMethodNotAllowed
     }
@@ -344,6 +375,53 @@ func getFriendEndpoint(user User, friendId int) GetFriendResponse {
     return GetFriendResponse{
         Success:    true,
         Friend:     friend.toPublic(),
+    }
+}
+
+/*
+ * DELETE /friends/{friendId}
+ * Removes a user from the current user's friends list.
+ */
+type DeleteFriendResponse struct {
+    Success bool    `json:"success"`
+    Error   string  `json:"error"`
+}
+
+func deleteFriendEndpoint(user User, friendId int) DeleteFriendResponse {
+    if friendId == user.Id {
+        return DeleteFriendResponse{
+            Success:    false,
+            Error:      "Friend ID cannot be your own",
+        }
+    }
+
+    var friend User
+    dbErr := db.Where(&User{Id: friendId}).First(&friend).Error
+
+    if dbErr != nil {
+        return DeleteFriendResponse{
+            Success:    false,
+            Error:      "Friend not found",
+        }
+    }
+
+    if !user.isFriend(friend) {
+        return DeleteFriendResponse{
+            Success:    false,
+            Error:      "User is not your friend",
+        }
+    }
+
+    // actually delete the friend
+    if err := user.deleteFriend(friend); err != nil {
+        return DeleteFriendResponse{
+            Success:    false,
+            Error:      err.Error(),
+        }
+    }
+
+    return DeleteFriendResponse{
+        Success:    true,
     }
 }
 

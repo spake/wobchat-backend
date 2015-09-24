@@ -286,6 +286,79 @@ func TestAddingFriends(t *testing.T) {
     }
 }
 
+func TestDeletingFriends(t *testing.T) {
+    defer resetTables()
+
+    user1 := User{
+        Id:        12345,
+        Uid:       "12345",
+        Name:      "Jayden Smith",
+        FirstName: "Jayden",
+        LastName:  "Smith",
+        Email:     "poop@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 1")
+    db.Create(&user1)
+
+    user2 := User{
+        Id:        12346,
+        Uid:       "12346",
+        Name:      "Will Smith",
+        FirstName: "Will",
+        LastName:  "Smith",
+        Email:     "doody@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 2")
+    db.Create(&user2)
+
+    log.Println("Trying to delete non-existent friendship")
+    if err := user1.deleteFriend(user2); err == nil {
+        t.Error("Succeeded in deleting non-existent friendship")
+    }
+    if err := user2.deleteFriend(user1); err == nil {
+        t.Error("Succeeded in deleting non-existent friendship")
+    }
+
+    log.Println("Adding friendship")
+    user1.addFriend(user2)
+
+    log.Println("Trying to delete friendship (1)")
+    if err := user1.deleteFriend(user2); err != nil {
+        t.Errorf("Failed to delete friendship: %v", err)
+    }
+   
+    log.Println("Trying to delete friendship that's already deleted")
+    if err := user1.deleteFriend(user2); err == nil {
+        t.Error("Succeeded in deleting non-existent friendship")
+    }
+    if err := user2.deleteFriend(user1); err == nil {
+        t.Error("Succeeded in deleting non-existent friendship")
+    }
+
+    log.Println("Adding friendship")
+    user1.addFriend(user2)
+
+    log.Println("Trying to delete friendship (2)")
+    if err := user2.deleteFriend(user1); err != nil {
+        t.Errorf("Failed to delete friendship: %v", err)
+    }
+
+    log.Println("Trying to delete friendship that's already deleted")
+    if err := user1.deleteFriend(user2); err == nil {
+        t.Error("Succeeded in deleting non-existent friendship")
+    }
+    if err := user2.deleteFriend(user1); err == nil {
+        t.Error("Succeeded in deleting non-existent friendship")
+    }
+
+    log.Println("Trying to delete self as friend")
+    if err := user1.deleteFriend(user1); err == nil {
+        t.Error("Succeeded in deleting self as friend")
+    }
+}
+
 func comparePublicUser(t *testing.T, testUser User, publicUser PublicUser) {
     log.Printf("Comparing user %v\n", testUser.Id)
 
@@ -577,6 +650,55 @@ func TestAddFriendEndpoint(t *testing.T) {
     }
     if friends[0] != testUser4 {
         t.Errorf("test user 4 not found in friends")
+    }
+}
+
+func TestDeleteFriendEndpoint(t *testing.T) {
+    defer resetTables()
+
+    user1 := User{
+        Id:        420,
+        Uid:       "420",
+        Name:      "Snoop Dogg",
+        FirstName: "Snoop",
+        LastName:  "Dogg",
+        Email:     "blazeit@gmail.com",
+        Picture:   "40keks"}
+
+    log.Println("Creating test user 1")
+    db.Create(&user1)
+
+    user2 := User{
+        Id:        12345,
+        Uid:       "12345",
+        Name:      "Jayden Smith",
+        FirstName: "Jayden",
+        LastName:  "Smith",
+        Email:     "poop@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 2")
+    db.Create(&user2)
+
+    log.Println("Trying to delete friends (not friends yet)")
+    resp := deleteFriendEndpoint(user1, user2.Id)
+    if resp.Success || resp.Error == "" {
+        t.Error("Succeeded in deleting friendship that didn't exist")
+    }
+
+    log.Println("Adding users as friends")
+    user1.addFriend(user2)
+
+    log.Println("Trying to delete friends (users are friends)")
+    resp = deleteFriendEndpoint(user1, user2.Id)
+    if !resp.Success || resp.Error != "" {
+        t.Errorf("Failed to delete friendship that existed (%v)", resp.Error)
+    }
+
+    log.Println("Trying to delete friends again (users no longer friends)")
+    resp = deleteFriendEndpoint(user1, user2.Id)
+    if resp.Success || resp.Error == "" {
+        t.Error("Succeeded in deleting friendship that didn't exist")
     }
 }
 
