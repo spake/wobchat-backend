@@ -4,7 +4,10 @@ import (
     "log"
     "net/http"
     "sync"
+    "time"
 )
+
+const EventTimeout = 60
 
 type EventListener struct {
     Lock        sync.Mutex
@@ -13,7 +16,62 @@ type EventListener struct {
     Event       interface{}
 }
 
-var listeners map[int]*EventListener
+var listenersLock   sync.Mutex
+var listeners       map[int]*EventListener
+
+func getListener(userId int) *EventListener {
+    listenersLock.Lock()
+
+    if listeners == nil {
+        listeners = make(map[int]*EventListener)
+    }
+
+    listener := listeners[userId]
+    if listener == nil {
+        listener = new(EventListener)
+        listener.Cond = sync.NewCond(&listener.Lock)
+        listeners[userId] = listener
+    }
+
+    listenersLock.Unlock()
+
+    return listener
+}
+
+// Sends an event to the given user.
+func sendEvent(userId int, eventType int, event interface{}) {
+    listener := getListener(userId)
+
+    listener.Lock.Lock()
+    listener.Cond.Broadcast()
+    listener.EventType = eventType
+    listener.Event = event
+    listener.Lock.Unlock()
+}
+
+// Waits until an event is received (or timeout).
+func waitForEvent(userId int) (eventType int, event interface{}, timedOut bool) {
+    listener := getListener(userId)
+
+    c := make(chan int)
+
+    go func() {
+        listener.Lock.Lock()
+        listener.Cond.Wait()
+        eventType = listener.EventType
+        event = listener.Event
+        listener.Lock.Unlock()
+
+        c <- 1
+    }()
+
+    select {
+    case <-c:
+        return eventType, event, false
+    case <-time.After(time.Second * EventTimeout):
+        return eventType, event, true
+    }
+}
 
 func eventHandler(w http.ResponseWriter, r *http.Request) int {
     log.Println("Handling /nextEvent")
@@ -24,22 +82,11 @@ func eventHandler(w http.ResponseWriter, r *http.Request) int {
 
     var resp interface{}
 
-    if listeners == nil {
-        listeners = make(map[int]*EventListener)
-    }
-
-    listener := listeners[user.Id]
-    if listener == nil {
-        listener = new(EventListener)
-        listener.Cond = sync.NewCond(&listener.Lock)
-        listeners[user.Id] = listener
-    }
-
     switch r.Method {
     case "GET":
-        resp = getEventEndpoint(user, listener)
+        resp = getEventEndpoint(user)
     case "POST":
-        resp = postEventEndpoint(user, listener)
+        resp = postEventEndpoint(user)
     default:
         return http.StatusMethodNotAllowed
     }
@@ -63,20 +110,23 @@ type EventNewMessage struct {
     Message Message `json:"message"`
 }
 
-func getEventEndpoint(user User, listener *EventListener) GetEventResponse {
+func getEventEndpoint(user User) GetEventResponse {
     log.Println("Waiting for event")
 
-    listener.Lock.Lock()
-    listener.Cond.Wait()
-    eventType := listener.EventType
-    event := listener.Event
-    listener.Lock.Unlock()
+    eventType, event, timedOut := waitForEvent(user.Id)
 
-    return GetEventResponse{
-        Success:    true,
-        Error:      "",
-        EventType:  eventType,
-        Event:      event,
+    if timedOut {
+        return GetEventResponse{
+            Success:    false,
+            Error:      "Timed out",
+        }
+    } else {
+        return GetEventResponse{
+            Success:    true,
+            Error:      "",
+            EventType:  eventType,
+            Event:      event,
+        }
     }
 }
 
@@ -85,13 +135,13 @@ type PostEventResponse struct {
     Error   string  `json:"error"`
 }
 
-func postEventEndpoint(user User, listener *EventListener) PostEventResponse {
+func postEventEndpoint(user User) PostEventResponse {
     log.Println("Sending message")
 
     msg := Message{
         Content:        "condition variables are gr8",
         ContentType:    ContentTypeText,
-        SenderId:       0,
+        SenderId:       420,
         RecipientId:    user.Id,
         RecipientType:  RecipientTypeUser,
     }
@@ -100,11 +150,7 @@ func postEventEndpoint(user User, listener *EventListener) PostEventResponse {
         Message:    msg,
     }
 
-    listener.Lock.Lock()
-    listener.Cond.Broadcast()
-    listener.EventType = EventTypeNewMessage
-    listener.Event = event
-    listener.Lock.Unlock()
+    sendEvent(user.Id, EventTypeNewMessage, event)
 
     return PostEventResponse{
         Success:    true,
