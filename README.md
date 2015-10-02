@@ -51,30 +51,6 @@ Friends
       ]
     }
 
-###`POST`
-
->Adds a user as a friend of the current user.
->
-####Request Format:
-    {
-      "id":1
-    }
->
-####Response Format:
-    {
-      "success": true,
-      "error": "",
-      "friend": {
-        "id": 2,
-        "uid": "123456788",
-        "name": "Shrek The Ogre",
-        "firstName": "Shrek",
-        "lastName": "The Ogre",
-        "picture": "https://lh6.googleusercontent.com/something/photo.jpg"
-      }
-    }
-
-
 ##`/friends/{friendId}`
 
 ###`GET`
@@ -145,7 +121,48 @@ Friends
       "id": 1
     }
 
+##`/friendrequests`
 
+###`GET`
+
+>Gets a list of friend requests made to the current user.
+>
+####Response Format:
+    {
+      "success": true,
+      "requestors": [
+        {
+          "id": 1,
+          "uid": "123456789",
+          "name": "Wayne Wobcke",
+          "firstName": "Wayne",
+          "lastName": "Wobcke",
+          "picture": "https://lh6.googleusercontent.com/something/photo.jpg"
+        }
+      ]
+    }
+
+##`/friendrequests/{requestorId}`
+
+###`PUT`
+
+>Accepts a friend request from the supplied user to the current user.
+>
+####Response Format:
+    {
+      "success": true,
+      "error": ""
+    }
+
+###`DELETE`
+
+>Declines a friend request from the supplied user to the current user.
+>
+####Response Format:
+    {
+      "success": true,
+      "error": ""
+    }
 
 Users
 -----
@@ -190,4 +207,19 @@ Users
           "picture": "https://lh6.googleusercontent.com/something/photo.jpg"
         }
       ]
+    }
+
+##`/users/{userId}/friendrequests`
+
+###`POST`
+
+>Sends a friend request from the current user to the supplied user.
+>
+####Request Format:
+    {}
+>
+####Response Format:
+    {
+      "success": true,
+      "error": ""
     }
