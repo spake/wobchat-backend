@@ -115,25 +115,25 @@ func (user *User) isFriend(friend User) bool {
     return true
 }
 
-// get friend requests sent to that user
+// get friend requests sent to a user
 func (user *User) getFriendRequests() Users {
     requestors := []User{}
-    db.Joins("inner join friend_requests on friend_id = id").Where(&UserFriend{UserId: user.Id}).Find(&requestors)
+    db.Joins("inner join friend_requests on requestor_id = id").Where(&UserFriend{UserId: user.Id}).Find(&requestors)
     return requestors
 }
 
-// add a friend request from user to requestedFriend
-func (user *User) addFriendRequest(requestedFriend User) error {
-    if user.Id == requestedFriend.Id {
+// add a friend request to user from requestor
+func (user *User) addFriendRequest(requestor User) error {
+    if user.Id == requestor.Id {
         return errors.New("Cannot request to be your own friend")
     }
 
-    err := db.Create(FriendRequest{UserId: requestedFriend.Id, RequestorId: user.Id}).Error
+    err := db.Create(&FriendRequest{UserId: user.Id, RequestorId: requestor.Id}).Error
 
     return err
 }
 
-// get friend requests sent to that user
+// get whether a friend request has been sent from requestor to user
 func (user *User) hasFriendRequest(requestor User) bool {
     var friendRequest FriendRequest
     if err := db.Where(&FriendRequest{UserId: user.Id, RequestorId: requestor.Id}).Find(&friendRequest).Error; err != nil {
@@ -684,8 +684,32 @@ func addOthersFriendRequestEndpoint(user User, requestedId int) AddOthersFriendR
             Success: false,
             Error:   "User not found"}
     }
+
+    // check if they are already friends
+    if requestedFriend.isFriend(user) {
+        return AddOthersFriendRequestResponse{
+            Success:    false,
+            Error:      "User is already your friend",
+        }
+    }
+
+    // check if the request exists
+    if requestedFriend.hasFriendRequest(user) {
+        return AddOthersFriendRequestResponse{
+            Success:    false,
+            Error:      "User already has a friend request from you",
+        }
+    }
+
+    // check if the opposite request exists
+    if user.hasFriendRequest(requestedFriend) {
+        return AddOthersFriendRequestResponse{
+            Success:    false,
+            Error:      "You already have a friend request from that user",
+        }
+    }
     
-    addErr := user.addFriendRequest(requestedFriend)
+    addErr := requestedFriend.addFriendRequest(user)
 
     if addErr != nil {
         return AddOthersFriendRequestResponse{
