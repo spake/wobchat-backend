@@ -7,13 +7,15 @@ import (
     "time"
 )
 
-const EventTimeout = 60
+const EventTimeout = 5
 
 type EventListener struct {
     Lock        sync.Mutex
     Cond        *sync.Cond
     EventType   int
     Event       interface{}
+
+    TimeoutChan *chan bool
 }
 
 var listenersLock   sync.Mutex
@@ -44,8 +46,11 @@ func sendEvent(userId int, eventType int, event interface{}) {
 
     listener.Lock.Lock()
     listener.Cond.Broadcast()
+
     listener.EventType = eventType
     listener.Event = event
+    listener.TimeoutChan = nil
+
     listener.Lock.Unlock()
 }
 
@@ -53,23 +58,61 @@ func sendEvent(userId int, eventType int, event interface{}) {
 func waitForEvent(userId int) (eventType int, event interface{}, timedOut bool) {
     listener := getListener(userId)
 
-    c := make(chan int)
-
+    // spin off goroutine for wait loop
+    done := make(chan bool)
     go func() {
-        listener.Lock.Lock()
-        listener.Cond.Wait()
-        eventType = listener.EventType
-        event = listener.Event
-        listener.Lock.Unlock()
+        for {
+            listener.Lock.Lock()
+            listener.Cond.Wait()
 
-        c <- 1
+            if listener.TimeoutChan == nil {
+                // legit signal!
+                eventType = listener.EventType
+                event = listener.Event
+
+                listener.Lock.Unlock()
+                done <- true
+
+                break
+            } else if listener.TimeoutChan == &done {
+                // timeout was for us :(
+                
+                listener.Lock.Unlock()
+                done <- false
+
+                break
+            }
+
+            listener.Lock.Unlock()
+        }
     }()
 
     select {
-    case <-c:
+    case <-done:
+        log.Println("Received message while waiting")
+
         return eventType, event, false
     case <-time.After(time.Second * EventTimeout):
-        return eventType, event, true
+        log.Println("Timed out while waiting")
+        log.Println("Broadcasting timeout signal")
+
+        listener.Lock.Lock()
+
+        listener.TimeoutChan = &done
+
+        listener.Cond.Broadcast()
+        listener.Lock.Unlock()
+
+        log.Println("Waiting for response from listener")
+        // this will either mean we successfully timed out or we
+        // were receiving something while timing out
+        if <-done {
+            log.Println("Surprise! Received data")
+            return eventType, event, false
+        } else {
+            log.Println("Timeout successful")
+            return 0, nil, true
+        }
     }
 }
 
