@@ -133,6 +133,13 @@ func (user *User) getMessagesWithUser(otherUser User) (msgs Messages) {
     return msgs
 }
 
+func (user *User) getNextMessageAfterId(afterId int) (msg Message, ok bool) {
+    if err := db.Where("sender_id = ? and id > ?", user.Id, afterId).First(&msg).Error; err == nil {
+        return msg, true
+    }
+    return Message{}, false
+}
+
 func (user *User) addMessageToUser(otherUser User, content string, contentType ContentType) (msg Message, err error) {
     if !contentType.valid() {
         return msg, errors.New("Invalid content type")

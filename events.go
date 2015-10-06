@@ -3,34 +3,34 @@ package main
 import (
     "log"
     "net/http"
+    "strconv"
     "sync"
     "time"
 )
 
-const EventTimeout = 60
+const MessageEventTimeout = 60
 
-type EventListener struct {
+type MessageEventListener struct {
     Lock        sync.Mutex
     Cond        *sync.Cond
-    EventType   int
-    Event       interface{}
+    Message     Message
 
     TimeoutChan *chan bool
 }
 
 var listenersLock   sync.Mutex
-var listeners       map[int]*EventListener
+var listeners       map[int]*MessageEventListener
 
-func getListener(userId int) *EventListener {
+func getListener(userId int) *MessageEventListener {
     listenersLock.Lock()
 
     if listeners == nil {
-        listeners = make(map[int]*EventListener)
+        listeners = make(map[int]*MessageEventListener)
     }
 
     listener := listeners[userId]
     if listener == nil {
-        listener = new(EventListener)
+        listener = new(MessageEventListener)
         listener.Cond = sync.NewCond(&listener.Lock)
         listeners[userId] = listener
     }
@@ -41,21 +41,20 @@ func getListener(userId int) *EventListener {
 }
 
 // Sends an event to the given user.
-func sendEvent(userId int, eventType int, event interface{}) {
+func sendMessageEvent(userId int, message Message) {
     listener := getListener(userId)
 
     listener.Lock.Lock()
     listener.Cond.Broadcast()
 
-    listener.EventType = eventType
-    listener.Event = event
+    listener.Message = message
     listener.TimeoutChan = nil
 
     listener.Lock.Unlock()
 }
 
 // Waits until an event is received (or timeout).
-func waitForEvent(userId int) (eventType int, event interface{}, timedOut bool) {
+func waitForMessageEvent(userId int) (message Message, timedOut bool) {
     listener := getListener(userId)
 
     // spin off goroutine for wait loop
@@ -67,8 +66,7 @@ func waitForEvent(userId int) (eventType int, event interface{}, timedOut bool) 
 
             if listener.TimeoutChan == nil {
                 // legit signal!
-                eventType = listener.EventType
-                event = listener.Event
+                message = listener.Message
 
                 listener.Lock.Unlock()
                 done <- true
@@ -91,8 +89,8 @@ func waitForEvent(userId int) (eventType int, event interface{}, timedOut bool) 
     case <-done:
         log.Println("Received message while waiting")
 
-        return eventType, event, false
-    case <-time.After(time.Second * EventTimeout):
+        return message, false
+    case <-time.After(time.Second * MessageEventTimeout):
         log.Println("Timed out while waiting")
         log.Println("Broadcasting timeout signal")
 
@@ -108,26 +106,32 @@ func waitForEvent(userId int) (eventType int, event interface{}, timedOut bool) 
         // were receiving something while timing out
         if <-done {
             log.Println("Surprise! Received data")
-            return eventType, event, false
+            return message, false
         } else {
             log.Println("Timeout successful")
-            return 0, nil, true
+            return Message{}, true
         }
     }
 }
 
-func eventHandler(w http.ResponseWriter, r *http.Request) int {
-    log.Println("Handling /nextEvent")
+func nextMessageHandler(w http.ResponseWriter, r *http.Request) int {
+    log.Println("Handling /nextMessage")
     user, ok := getCurrentUser(r)
     if !ok {
         return http.StatusUnauthorized
     }
-
+    
     var resp interface{}
 
     switch r.Method {
     case "GET":
-        resp = getEventEndpoint(user)
+        afterId, err := strconv.Atoi(r.FormValue("after"))
+        if err != nil || afterId <= 0 {
+            log.Println("After ID not positive integer")
+            return http.StatusBadRequest
+        }
+
+        resp = getNextMessageEndpoint(user, afterId)
     default:
         return http.StatusMethodNotAllowed
     }
@@ -136,37 +140,37 @@ func eventHandler(w http.ResponseWriter, r *http.Request) int {
     return http.StatusOK
 }
 
-const (
-    EventTypeNewMessage = 1
-)
-
-type GetEventResponse struct {
+type GetNextMessageResponse struct {
     Success     bool        `json:"success"`
     Error       string      `json:"error"`
-    EventType   int         `json:"eventType"`
-    Event       interface{} `json:"event"`
+    Message     Message     `json:"message"`
 }
 
-type EventNewMessage struct {
-    Message Message `json:"message"`
-}
+func getNextMessageEndpoint(user User, afterId int) GetNextMessageResponse {
+    // is there already a new message?
+    message, ok := user.getNextMessageAfterId(afterId)
+    if ok {
+        log.Printf("Found existing message: %v\n", message.Id)
+        return GetNextMessageResponse{
+            Success:    true,
+            Message:    message,
+        }
+    }
 
-func getEventEndpoint(user User) GetEventResponse {
-    log.Println("Waiting for event")
+    // no new messages: long-poll and wait
+    log.Println("Waiting for message")
 
-    eventType, event, timedOut := waitForEvent(user.Id)
+    message, timedOut := waitForMessageEvent(user.Id)
 
     if timedOut {
-        return GetEventResponse{
+        return GetNextMessageResponse{
             Success:    false,
             Error:      "Timed out",
         }
     } else {
-        return GetEventResponse{
+        return GetNextMessageResponse{
             Success:    true,
-            Error:      "",
-            EventType:  eventType,
-            Event:      event,
+            Message:    message,
         }
     }
 }
