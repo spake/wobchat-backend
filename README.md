@@ -193,46 +193,29 @@ Users
     }
 
 Events
-======
+------
 
-Endpoints
----------
-
-##`/nextEvent`
+##`/nextMessage?after={messageID}`
 
 ###`GET`
 
->Long-polling endpoint; waits for an event.
->Times out after 60 seconds.
+>Given the ID of the last message the client has seen (`after`), gets
+>the next message that the client has not yet seen.
+>If a new message already exists, then it is returned immediately;
+>otherwise, the endpoint waits (for up to 60 seconds) for a message to
+>be received.
 >
 ####Response Format:
     {
       "success": true,
       "error": "",
-      "eventType": 1,
-      "event": {
-        "message": ...
-      }
+      "message": ...
     }
 
-> Possible values for `eventType` (and corresponding layouts of `event`) are given below.
+    OR
 
-Event Types
------------
-
-##`EventTypeNewMessage` = 1
-
->New message received.
->
-####Event format:
     {
-      "message": {
-        "id": 3,
-        "content": "Doot doot",
-        "contentType": 1,
-        "senderId": 123,
-        "recipientId": 456,
-        "recipientType": 1,
-        "timestamp": "2015-09-23T02:14:29.945951+10:00"
-      }
+      "success": false,
+      "error": "Timed out",
+      "message": ...
     }
