@@ -51,6 +51,29 @@ Friends
       ]
     }
 
+###`POST`
+
+>Adds a user as a friend of the current user.
+>
+####Request Format:
+    {
+      "id":1
+    }
+>
+####Response Format:
+    {
+      "success": true,
+      "error": "",
+      "friend": {
+        "id": 2,
+        "uid": "123456788",
+        "name": "Shrek The Ogre",
+        "firstName": "Shrek",
+        "lastName": "The Ogre",
+        "picture": "https://lh6.googleusercontent.com/something/photo.jpg"
+      }
+    }
+
 ##`/friends/{friendId}`
 
 ###`GET`
