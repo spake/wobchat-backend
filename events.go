@@ -7,7 +7,7 @@ import (
     "time"
 )
 
-const EventTimeout = 5
+const EventTimeout = 60
 
 type EventListener struct {
     Lock        sync.Mutex
@@ -128,8 +128,6 @@ func eventHandler(w http.ResponseWriter, r *http.Request) int {
     switch r.Method {
     case "GET":
         resp = getEventEndpoint(user)
-    case "POST":
-        resp = postEventEndpoint(user)
     default:
         return http.StatusMethodNotAllowed
     }
@@ -170,33 +168,5 @@ func getEventEndpoint(user User) GetEventResponse {
             EventType:  eventType,
             Event:      event,
         }
-    }
-}
-
-type PostEventResponse struct {
-    Success bool    `json:"success"`
-    Error   string  `json:"error"`
-}
-
-func postEventEndpoint(user User) PostEventResponse {
-    log.Println("Sending message")
-
-    msg := Message{
-        Content:        "condition variables are gr8",
-        ContentType:    ContentTypeText,
-        SenderId:       420,
-        RecipientId:    user.Id,
-        RecipientType:  RecipientTypeUser,
-    }
-
-    event := EventNewMessage{
-        Message:    msg,
-    }
-
-    sendEvent(user.Id, EventTypeNewMessage, event)
-
-    return PostEventResponse{
-        Success:    true,
-        Error:      "",
     }
 }
