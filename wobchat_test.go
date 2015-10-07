@@ -30,17 +30,20 @@ func TestMain(m *testing.M) {
     db.DropTable(&User{})
     db.DropTable(&UserFriend{})
     db.DropTable(&Message{})
+    db.DropTable(&FriendRequest{})
 
     log.Println("Creating/migrating tables")
     db.AutoMigrate(&User{})
     db.AutoMigrate(&UserFriend{})
     db.AutoMigrate(&Message{})
+    db.AutoMigrate(&FriendRequest{})
 
     result := m.Run()
 
     db.DropTable(&User{})
     db.DropTable(&UserFriend{})
     db.DropTable(&Message{})
+    db.DropTable(&FriendRequest{})
 
     os.Exit(result)
 }
@@ -50,4 +53,5 @@ func resetTables() {
     db.Exec("DELETE FROM users;")
     db.Exec("DELETE FROM user_friends;")
     db.Exec("DELETE FROM messages;")
+    db.Exec("DELETE FROM friend_requests;")
 }

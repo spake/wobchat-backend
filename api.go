@@ -44,6 +44,9 @@ func setupAPIHandlers() *mux.Router {
     router.Handle("/friends/{friendId:[0-9]+}/messages", APIHandler(messagesHandler))
     router.Handle("/users", APIHandler(usersHandler))
     router.Handle("/me", APIHandler(meHandler))
-
+    router.Handle("/friendrequests", APIHandler(myFriendRequestsHandler))
+    router.Handle("/friendrequests/{requestorId:[0-9]+}", APIHandler(myFriendRequestHandler))
+    router.Handle("/users/{userId:[0-9]+}/friendrequests", APIHandler(othersFriendRequestHandler))
+ 
     return router
 }
