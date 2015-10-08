@@ -33,6 +33,12 @@ type UserFriend struct {
     FriendId    int `gorm:"primary_key"`
 }
 
+// Represents a 
+type FriendRequest struct {
+    UserId         int `gorm:"primary_key"`
+    RequestorId    int `gorm:"primary_key"`
+}
+
 type Users []User
 
 // Smaller version of User without sensitive/unnecessary info, for sending to
@@ -105,6 +111,33 @@ func (user *User) deleteFriend(friend User) error {
 func (user *User) isFriend(friend User) bool {
     var uf UserFriend
     if err := db.Where(&UserFriend{UserId: user.Id, FriendId: friend.Id}).Find(&uf).Error; err != nil {
+        return false
+    }
+    return true
+}
+
+// get friend requests sent to a user
+func (user *User) getFriendRequests() Users {
+    requestors := []User{}
+    db.Joins("inner join friend_requests on requestor_id = id").Where(&UserFriend{UserId: user.Id}).Find(&requestors)
+    return requestors
+}
+
+// add a friend request to user from requestor
+func (user *User) addFriendRequest(requestor User) error {
+    if user.Id == requestor.Id {
+        return errors.New("Cannot request to be your own friend")
+    }
+
+    err := db.Create(&FriendRequest{UserId: user.Id, RequestorId: requestor.Id}).Error
+
+    return err
+}
+
+// get whether a friend request has been sent from requestor to user
+func (user *User) hasFriendRequest(requestor User) bool {
+    var friendRequest FriendRequest
+    if err := db.Where(&FriendRequest{UserId: user.Id, RequestorId: requestor.Id}).Find(&friendRequest).Error; err != nil {
         return false
     }
     return true
@@ -517,4 +550,230 @@ func getMeEndpoint(currentUser User) GetMeResponse {
         Error:      "",
         User:       currentUser.toPublic(),
     }
+}
+
+/*
+ * /friendrequests endpoint
+ */
+
+func myFriendRequestsHandler(w http.ResponseWriter, r *http.Request) int {
+    log.Println("Handling /friendrequests")
+    user, ok := getCurrentUser(r)
+    if !ok {
+        return http.StatusUnauthorized
+    }
+
+    var resp interface{}
+
+    switch r.Method {
+    case "GET":
+        resp = listMyFriendRequestsEndpoint(user)
+    default:
+        return http.StatusMethodNotAllowed
+    }
+
+    sendJSONResponse(w, resp)
+    return http.StatusOK
+}
+
+/*
+ * GET /friendrequests
+ * Gets a list of friend requests made to the current user.
+ */
+type ListMyFriendRequestsResponse struct {
+    Success bool               `json:"success"`
+    Requestors []PublicUser    `json:"requestors"`
+}
+
+func listMyFriendRequestsEndpoint(user User) ListMyFriendRequestsResponse {
+    var requestors Users
+    requestors = user.getFriendRequests()
+
+    resp := ListMyFriendRequestsResponse{
+        Success:    true,
+        Requestors: requestors.toPublic(),
+    }
+
+    return resp
+}
+
+/*
+ * /friendrequests/{requestorId} endpoint
+ */
+
+func myFriendRequestHandler(w http.ResponseWriter, r *http.Request) int {
+    log.Println("Handling /friendrequests/{requestorId}")
+    user, ok := getCurrentUser(r)
+    if !ok {
+        return http.StatusUnauthorized
+    }
+
+    vars := mux.Vars(r)
+    requestorId, err := strconv.Atoi(vars["requestorId"])
+    if err != nil || requestorId <= 0 {
+        log.Println("Requestor User ID not positive integer")
+        return http.StatusBadRequest
+    }
+
+    var resp interface{}
+
+    switch r.Method {
+    case "DELETE":
+        resp = modifyMyFriendRequestEndpoint(user, requestorId, "decline")
+    case "PUT":
+        resp = modifyMyFriendRequestEndpoint(user, requestorId, "accept")
+    default:
+        return http.StatusMethodNotAllowed
+    }
+
+    sendJSONResponse(w, resp)
+    return http.StatusOK
+}
+
+/*
+ * PUT /friendrequests/{requestorId}
+ * Accepts a friend request from the supplied user to the current user.
+ */
+
+ /*
+ * DELETE /friendrequests/{requestorId}
+ * Declines a friend request from the supplied user to the current user.
+ */
+type ModifyMyFriendRequestResponse struct {
+    Success bool    `json:"success"`
+    Error   string  `json:"error"`
+}
+
+func modifyMyFriendRequestEndpoint(user User, requestorId int, action string) ModifyMyFriendRequestResponse {
+    // check if the current user and the specified user are the same
+    if requestorId == user.Id {
+        return ModifyMyFriendRequestResponse{
+            Success:    false,
+            Error:      "Requestor User ID cannot be your own",
+        }
+    }
+
+    // get the user from the ID
+    var requestor User
+    dbErr := db.Where(&User{Id: requestorId}).First(&requestor).Error
+
+    // check if the user exists
+    if dbErr != nil {
+        return ModifyMyFriendRequestResponse{
+            Success:    false,
+            Error:      "User not found",
+        }
+    }
+
+    // check if the request exists
+    if !user.hasFriendRequest(requestor) {
+        return ModifyMyFriendRequestResponse{
+            Success:    false,
+            Error:      "User has not requested to be your friend",
+        }
+    }
+
+    if action == "accept" {
+        // add the friend
+        if err := user.addFriend(requestor); err != nil {
+            return ModifyMyFriendRequestResponse{
+                Success:    false,
+                Error:      err.Error(),
+            }
+        }
+    }
+
+    // delete the request
+    db.Where("user_id = ? and requestor_id = ?", user.Id, requestor.Id).Delete(FriendRequest{})
+
+    return ModifyMyFriendRequestResponse{
+        Success:    true,
+    }
+}
+
+/*
+ * /users/{userId}/friendrequests endpoint
+ */
+
+func othersFriendRequestHandler(w http.ResponseWriter, r *http.Request) int {
+    log.Println("Handling /users/{userId}/friendrequests")
+    user, ok := getCurrentUser(r)
+    if !ok {
+        return http.StatusUnauthorized
+    }
+
+    vars := mux.Vars(r)
+    userId, err := strconv.Atoi(vars["userId"])
+    if err != nil || userId <= 0 {
+        log.Println("User ID not positive integer")
+        return http.StatusBadRequest
+    }
+
+    var resp interface{}
+
+    switch r.Method {
+    case "POST":
+        resp = addOthersFriendRequestEndpoint(user, userId)
+    default:
+        return http.StatusMethodNotAllowed
+    }
+
+    sendJSONResponse(w, resp)
+    return http.StatusOK
+}
+
+/*
+ * POST /users/{userId}/friendrequests
+ * Sends a friend request from the current user to the supplied user.
+ */
+
+type AddOthersFriendRequestResponse struct {
+    Success bool        `json:"success"`
+    Error   string      `json:"error"`
+}
+
+func addOthersFriendRequestEndpoint(user User, requestedId int) AddOthersFriendRequestResponse {
+    var requestedFriend User
+    dbErr := db.Where(&User{Id: requestedId}).First(&requestedFriend).Error
+
+    if dbErr != nil {
+        // friend they are requesting not found
+        return AddOthersFriendRequestResponse{
+            Success: false,
+            Error:   "User not found"}
+    }
+
+    // check if they are already friends
+    if requestedFriend.isFriend(user) {
+        return AddOthersFriendRequestResponse{
+            Success:    false,
+            Error:      "User is already your friend",
+        }
+    }
+
+    // check if the request exists
+    if requestedFriend.hasFriendRequest(user) {
+        return AddOthersFriendRequestResponse{
+            Success:    false,
+            Error:      "User already has a friend request from you",
+        }
+    }
+
+    // check if the opposite request exists
+    if user.hasFriendRequest(requestedFriend) {
+        return AddOthersFriendRequestResponse{
+            Success:    false,
+            Error:      "You already have a friend request from that user",
+        }
+    }
+    
+    addErr := requestedFriend.addFriendRequest(user)
+
+    if addErr != nil {
+        return AddOthersFriendRequestResponse{
+            Success: false,
+            Error:   addErr.Error()}
+    }
+
+    return AddOthersFriendRequestResponse{Success: true}
 }

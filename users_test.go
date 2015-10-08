@@ -1083,3 +1083,411 @@ func TestGetMeEndpoint(t *testing.T) {
         t.Errorf("Get me endpoint's public user didn't match")
     }
 }
+
+func TestFriendRequests(t *testing.T) {
+    defer resetTables()
+    user1 := User{
+        Id:        420,
+        Uid:       "420",
+        Name:      "Snoop Doge",
+        FirstName: "Snoop",
+        LastName:  "Doge",
+        Email:     "higher@gmail.com",
+        Picture:   "42keks"}
+
+    log.Println("Creating test user 1")
+    db.Create(&user1)
+
+    log.Println("Requesting a friend request to yourself")
+    err := user1.addFriendRequest(user1)
+    if err.Error() != "Cannot request to be your own friend" {
+        t.Error("Friend requests to yourself should fail")
+    }
+
+    user2 := User{
+        Id:        421,
+        Uid:       "421",
+        Name:      "Peppa Pig",
+        FirstName: "Peppa",
+        LastName:  "Pig",
+        Email:     "p.pig@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 2")
+    db.Create(&user2)
+
+    log.Println("Getting user 1's friend requests - should be empty")
+    friendrequests := user1.getFriendRequests()
+    if len(friendrequests) != 0 {
+        t.Error("Friend requests found for user with no friend requests")
+    }
+
+    log.Println("Getting user 2's friend requests - should be empty")
+    friendrequests = user2.getFriendRequests()
+    if len(friendrequests) != 0 {
+        t.Error("Friend requests found for user with no friend requests")
+    }
+
+    log.Println("Testing if user 1 has a friend request from user 2")
+    if user1.hasFriendRequest(user2) {
+        t.Error("User 1 shouldn't have a friend request from user 2")
+    }
+
+    log.Println("Testing if user 2 has a friend request from user 1")
+    if user2.hasFriendRequest(user1) {
+        t.Error("User 2 shouldn't have a friend request from user 1")
+    }
+
+    log.Println("Add a friend request from user2 to user1")
+    user1.addFriendRequest(user2)
+
+    log.Println("Getting user 1's friend requests")
+    friendrequests = user1.getFriendRequests()
+    if len(friendrequests) != 1 {
+        t.Errorf("1 friend request should have been found, found %v\n", len(friendrequests))
+    } else {
+        if friendrequests[0].Id != 421 {
+            t.Errorf("Friend request had wrong user Id. Expected 421, found %v\n", friendrequests[0].Id)
+        }
+    }
+
+    log.Println("Getting user 2's friend requests - should be empty")
+    friendrequests = user2.getFriendRequests()
+    if len(friendrequests) != 0 {
+        t.Error("Friend requests found for user with no friend requests")
+    }
+
+    log.Println("Testing if user 1 has a friend request from user 2")
+    if !user1.hasFriendRequest(user2) {
+        t.Error("User 1 should have a friend request from user 2")
+    }
+
+    log.Println("Testing if user 2 has a friend request from user 1")
+    if user2.hasFriendRequest(user1) {
+        t.Error("User 2 shouldn't have a friend request from user 1")
+    }
+
+    log.Println("Add a friend request from user1 to user2")
+    user2.addFriendRequest(user1)
+
+    log.Println("Getting user 1's friend requests")
+    friendrequests = user1.getFriendRequests()
+    if len(friendrequests) != 1 {
+        t.Errorf("1 friend request should have been found, found %v\n", len(friendrequests))
+    } else {
+        if friendrequests[0].Id != 421 {
+            t.Errorf("Friend request had wrong user Id. Expected 421, found %v\n", friendrequests[0].Id)
+        }
+    }
+
+    log.Println("Getting user 2's friend requests")
+    friendrequests = user2.getFriendRequests()
+    if len(friendrequests) != 1 {
+        t.Errorf("1 friend request should have been found, found %v\n", len(friendrequests))
+    } else {
+        if friendrequests[0].Id != 420 {
+            t.Errorf("Friend request had wrong user Id. Expected 420, found %v\n", friendrequests[0].Id)
+        }
+    }
+
+    log.Println("Testing if user 1 has a friend request from user 2")
+    if !user1.hasFriendRequest(user2) {
+        t.Error("User 1 should have a friend request from user 2")
+    }
+
+    log.Println("Testing if user 2 has a friend request from user 1")
+    if !user2.hasFriendRequest(user1) {
+        t.Error("User 2 should have a friend request from user 1")
+    }
+
+    user3 := User{
+        Id:        422,
+        Uid:       "422",
+        Name:      "Yo Mum",
+        FirstName: "Yo",
+        LastName:  "Mum",
+        Email:     "top.kek@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 3")
+    db.Create(&user3)
+
+    log.Println("Testing if user 1 has a friend request from user 3")
+    if user1.hasFriendRequest(user3) {
+        t.Error("User 1 shouldn't have a friend request from user 3")
+    }
+
+    log.Println("Add a friend request from user3 to user1")
+    user1.addFriendRequest(user3)
+
+    log.Println("Getting user 1's friend requests")
+    friendrequests = user1.getFriendRequests()
+    if len(friendrequests) != 2 {
+        t.Errorf("2 friend requests should have been found, found %v\n", len(friendrequests))
+    } else {
+        if friendrequests[0].Id != 421 {
+            t.Errorf("Friend request had wrong user Id. Expected 421, found %v\n", friendrequests[0].Id)
+        }
+        if friendrequests[1].Id != 422 {
+            t.Errorf("Friend request had wrong user Id. Expected 422, found %v\n", friendrequests[1].Id)
+        }
+    }
+
+    log.Println("Testing if user 1 has a friend request from user 3")
+    if !user1.hasFriendRequest(user3) {
+        t.Error("User 1 should have a friend request from user 3")
+    }
+
+    log.Println("Testing if user 3 has a friend request from user 1")
+    if user3.hasFriendRequest(user1) {
+        t.Error("User 3 shouldn't have a friend request from user 1")
+    }
+}
+
+func TestListMyFriendRequestsEndpoint(t *testing.T) {
+    defer resetTables()
+    user1 := User{
+        Id:        420,
+        Uid:       "420",
+        Name:      "Snoop Doge",
+        FirstName: "Snoop",
+        LastName:  "Doge",
+        Email:     "higher@gmail.com",
+        Picture:   "42keks"}
+
+    log.Println("Creating test user 1")
+    db.Create(&user1)
+
+    user2 := User{
+        Id:        421,
+        Uid:       "421",
+        Name:      "Peppa Pig",
+        FirstName: "Peppa",
+        LastName:  "Pig",
+        Email:     "p.pig@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 2")
+    db.Create(&user2)
+
+    user3 := User{
+        Id:        422,
+        Uid:       "422",
+        Name:      "Yo Mum",
+        FirstName: "Yo",
+        LastName:  "Mum",
+        Email:     "top.kek@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 3")
+    db.Create(&user3)
+
+    log.Println("Add a friend request from user2 to user1")
+    user1.addFriendRequest(user2)
+
+    log.Println("Add a friend request from user3 to user1")
+    user1.addFriendRequest(user3)
+
+    log.Println("Listing friend requests")
+    resp := listMyFriendRequestsEndpoint(user1)
+
+    if !resp.Success {
+        t.Error("Listing failed when it should have succeeded")
+    }
+
+    if len(resp.Requestors) != 2 {
+        t.Errorf("2 friend requests should have been found, found %v\n", len(resp.Requestors))
+    } else {
+        if resp.Requestors[0].Id != 421 {
+            t.Errorf("Friend request had wrong user Id. Expected 421, found %v\n", resp.Requestors[0].Id)
+        }
+        if resp.Requestors[1].Id != 422 {
+            t.Errorf("Friend request had wrong user Id. Expected 422, found %v\n", resp.Requestors[1].Id)
+        }
+    }
+}
+
+func TestModifyMyFriendRequestEndpoint(t *testing.T) {
+    defer resetTables()
+    user1 := User{
+        Id:        420,
+        Uid:       "420",
+        Name:      "Snoop Doge",
+        FirstName: "Snoop",
+        LastName:  "Doge",
+        Email:     "higher@gmail.com",
+        Picture:   "42keks"}
+
+    log.Println("Creating test user 1")
+    db.Create(&user1)
+
+    user2 := User{
+        Id:        421,
+        Uid:       "421",
+        Name:      "Peppa Pig",
+        FirstName: "Peppa",
+        LastName:  "Pig",
+        Email:     "p.pig@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 2")
+    db.Create(&user2)
+
+    user3 := User{
+        Id:        422,
+        Uid:       "422",
+        Name:      "Yo Mum",
+        FirstName: "Yo",
+        LastName:  "Mum",
+        Email:     "top.kek@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 3")
+    db.Create(&user3)
+
+    log.Println("Add a friend request from user2 to user1")
+    user1.addFriendRequest(user2)
+
+    log.Println("Add a friend request from user3 to user1")
+    user1.addFriendRequest(user3)
+
+    log.Println("Trying to modify a request from yourself")
+    resp := modifyMyFriendRequestEndpoint(user1, 420, "accept")
+    if resp.Success || resp.Error == "" {
+        t.Error("Succeeded in modifying reflective friend request")
+    }
+
+    log.Println("Trying to modify a request from a user that doesn't exist")
+    resp = modifyMyFriendRequestEndpoint(user1, 1337, "accept")
+    if resp.Success || resp.Error == "" {
+        t.Error("Succeeded in modifying friend request from non existent user")
+    }
+
+    log.Println("Trying to modify a request that doesn't exist")
+    resp = modifyMyFriendRequestEndpoint(user2, 420, "accept")
+    if resp.Success || resp.Error == "" {
+        t.Error("Succeeded in modifying friend request that doesn't exist")
+    }
+
+    log.Println("Accepting a friend request")
+    resp = modifyMyFriendRequestEndpoint(user1, 421, "accept")
+    if !resp.Success || resp.Error != "" {
+        t.Error("Didn't succeed in modifying a valid friend request")
+    } else {
+        log.Println("Testing the request was deleted")
+        if user1.hasFriendRequest(user2) {
+            t.Error("Friend request wasn't deleted")
+        }
+        log.Println("Testing the users are now friends")
+        if !user1.isFriend(user2) {
+            t.Error("Users aren't now friends")
+        }
+    }
+
+    log.Println("Declining a friend request")
+    resp = modifyMyFriendRequestEndpoint(user1, 422, "decline")
+    if !resp.Success || resp.Error != "" {
+        t.Error("Didn't succeed in modifying a valid friend request")
+    } else {
+        log.Println("Testing the request was deleted")
+        if user1.hasFriendRequest(user3) {
+            t.Error("Friend request wasn't deleted")
+        }
+        log.Println("Testing the users are now not friends")
+        if user1.isFriend(user3) {
+            t.Error("Users are now friends when they shouldn't be")
+        }
+    }
+}
+
+func TestAddOthersFriendRequestEndpoint(t *testing.T) {
+    defer resetTables()
+    user1 := User{
+        Id:        420,
+        Uid:       "420",
+        Name:      "Snoop Doge",
+        FirstName: "Snoop",
+        LastName:  "Doge",
+        Email:     "higher@gmail.com",
+        Picture:   "42keks"}
+
+    log.Println("Creating test user 1")
+    db.Create(&user1)
+
+    user2 := User{
+        Id:        421,
+        Uid:       "421",
+        Name:      "Peppa Pig",
+        FirstName: "Peppa",
+        LastName:  "Pig",
+        Email:     "p.pig@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 2")
+    db.Create(&user2)
+
+    user3 := User{
+        Id:        422,
+        Uid:       "422",
+        Name:      "Yo Mum",
+        FirstName: "Yo",
+        LastName:  "Mum",
+        Email:     "top.kek@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 3")
+    db.Create(&user3)
+
+    log.Println("Add a friend request from user2 to user1")
+    user1.addFriendRequest(user2)
+
+    log.Println("Make user2 and user3 friends")
+    user2.addFriend(user3)
+
+    log.Println("Adding a friend request to a non-existent user")
+    resp := addOthersFriendRequestEndpoint(user1, 24601)
+    if resp.Success || resp.Error == "" {
+        t.Error("Succeeded in adding a friend request to a non-existent user")
+    }
+
+    log.Println("Adding a friend request to a friend")
+    resp = addOthersFriendRequestEndpoint(user2, 422)
+    if resp.Success || resp.Error == "" {
+        t.Error("Succeeded in adding a friend request to an existing friend")
+    }
+
+    log.Println("Adding a friend request that already exists")
+    resp = addOthersFriendRequestEndpoint(user2, 420)
+    if resp.Success || resp.Error == "" {
+        t.Error("Succeeded in adding a friend request that already exists")
+    }
+
+    log.Println("Adding a friend request that already exists in the opposite direction")
+    resp = addOthersFriendRequestEndpoint(user1, 421)
+    if resp.Success || resp.Error == "" {
+        t.Error("Succeeded in adding a friend request that already exists in the opposite direction")
+    }
+
+    log.Println("Adding a friend request to yourself")
+    resp = addOthersFriendRequestEndpoint(user1, 420)
+    if resp.Success || resp.Error == "" {
+        t.Error("Succeeded in adding a friend request to yourself")
+    }
+
+    log.Println("Adding a valid friend request")
+    resp = addOthersFriendRequestEndpoint(user3, 420)
+    if !resp.Success || resp.Error != "" {
+        t.Error("Didn't succeed in adding a valid friend request")
+    }
+    friendrequests := user1.getFriendRequests()
+    if len(friendrequests) != 2 {
+        t.Errorf("2 friend requests should have been found, found %v\n", len(friendrequests))
+    } else {
+        if friendrequests[0].Id != 421 {
+            t.Errorf("Friend request had wrong user Id. Expected 421, found %v\n", friendrequests[0].Id)
+        }
+        if friendrequests[1].Id != 422 {
+            t.Errorf("Friend request had wrong user Id. Expected 422, found %v\n", friendrequests[1].Id)
+        }
+    }
+}
