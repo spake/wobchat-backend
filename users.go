@@ -166,8 +166,9 @@ func (user *User) getMessagesWithUser(otherUser User) (msgs Messages) {
     return msgs
 }
 
+// Gets next message (i.e. with a greater ID than afterId) that the user has received
 func (user *User) getNextMessageAfterId(afterId int) (msg Message, ok bool) {
-    if err := db.Where("sender_id = ? and id > ?", user.Id, afterId).First(&msg).Error; err == nil {
+    if err := db.Where("recipient_id = ? and id > ?", user.Id, afterId).First(&msg).Error; err == nil {
         return msg, true
     }
     return Message{}, false

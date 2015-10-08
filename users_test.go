@@ -1491,3 +1491,56 @@ func TestAddOthersFriendRequestEndpoint(t *testing.T) {
         }
     }
 }
+
+func TestGetNextMessageEndpoint(t *testing.T) {
+    defer resetTables()
+    user1 := User{
+        Id:         1,
+        Uid:        "1",
+        Name:       "Tony Abbott",
+        FirstName:  "Tony",
+        LastName:   "Abbott",
+        Email:      "xXx_0n10n_fan_xXx@hotmail.com",
+        Picture:    "tone.jpg",
+    }
+    db.Create(&user1)
+
+    user2 := User{
+        Id:         2,
+        Uid:        "2",
+        Name:       "Malcolm Turnbull",
+        FirstName:  "Malcolm",
+        LastName:   "Turnbull",
+        Email:      "pm@gmail.com",
+        Picture:    "hehe",
+    }
+    db.Create(&user2)
+
+    log.Println("Adding messages")
+    msg1, _ := user1.addMessageToUser(user2, "malcom pls", ContentTypeText)
+    msg2, _ := user2.addMessageToUser(user1, "lel", ContentTypeText)
+    msg3, _ := user1.addMessageToUser(user2, "y u do dis", ContentTypeText)
+    msg4, _ := user2.addMessageToUser(user1, "get rekt", ContentTypeText)
+
+    log.Println("Checking getNextMessageAfterId for user1")
+    if msg, ok := user1.getNextMessageAfterId(0); !ok || msg.Id != msg2.Id {
+        t.Errorf("Message not found/wrong ID. Expected %v/%v, found %v/%v\n", true, msg2.Id, ok, msg.Id)
+    }
+    if msg, ok := user1.getNextMessageAfterId(msg2.Id); !ok || msg.Id != msg4.Id {
+        t.Errorf("Message not found/wrong ID. Expected %v/%v, found %v/%v\n", true, msg4.Id, ok, msg.Id)
+    }
+    if msg, ok := user1.getNextMessageAfterId(msg4.Id); ok {
+        t.Errorf("Message found when there shouldn't have been one. Found %v/%v\n", ok, msg.Id)
+    }
+
+    log.Println("Checking getNextMessageAfterId for user2")
+    if msg, ok := user2.getNextMessageAfterId(0); !ok || msg.Id != msg1.Id {
+        t.Errorf("Message not found/wrong ID. Expected %v/%v, found %v/%v\n", true, msg1.Id, ok, msg.Id)
+    }
+    if msg, ok := user2.getNextMessageAfterId(msg1.Id); !ok || msg.Id != msg3.Id {
+        t.Errorf("Message not found/wrong ID. Expected %v/%v, found %v/%v\n", true, msg3.Id, ok, msg.Id)
+    }
+    if msg, ok := user2.getNextMessageAfterId(msg3.Id); ok {
+        t.Errorf("Message found when there shouldn't have been one. Found %v/%v\n", ok, msg.Id)
+    }
+}
