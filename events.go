@@ -87,12 +87,12 @@ func waitForMessageEvent(userId int) (message Message, timedOut bool) {
 
     select {
     case <-done:
-        log.Println("Received message while waiting")
+        //log.Println("Received message while waiting")
 
         return message, false
     case <-time.After(time.Second * MessageEventTimeout):
-        log.Println("Timed out while waiting")
-        log.Println("Broadcasting timeout signal")
+        //log.Println("Timed out while waiting")
+        //log.Println("Broadcasting timeout signal")
 
         listener.Lock.Lock()
 
@@ -101,14 +101,14 @@ func waitForMessageEvent(userId int) (message Message, timedOut bool) {
         listener.Cond.Broadcast()
         listener.Lock.Unlock()
 
-        log.Println("Waiting for response from listener")
+        //log.Println("Waiting for response from listener")
         // this will either mean we successfully timed out or we
         // were receiving something while timing out
         if <-done {
-            log.Println("Surprise! Received data")
+            //log.Println("Surprise! Received data")
             return message, false
         } else {
-            log.Println("Timeout successful")
+            //log.Println("Timeout successful")
             return Message{}, true
         }
     }
