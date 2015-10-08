@@ -125,12 +125,20 @@ func nextMessageHandler(w http.ResponseWriter, r *http.Request) int {
 
     switch r.Method {
     case "GET":
-        afterId, err := strconv.Atoi(r.FormValue("after"))
-        if err != nil || afterId <= 0 {
-            log.Println("After ID not positive integer")
-            return http.StatusBadRequest
+        // default to ID of 0
+        afterId := 0
+
+        afterIdStr := r.FormValue("after")
+        if afterIdStr != "" {
+            var err error
+            afterId, err = strconv.Atoi(afterIdStr)
+            if err != nil || afterId <= 0 {
+                log.Println("After ID not positive integer")
+                return http.StatusBadRequest
+            }
         }
 
+        log.Printf("After ID: %v\n", afterId)
         resp = getNextMessageEndpoint(user, afterId)
     default:
         return http.StatusMethodNotAllowed
@@ -148,12 +156,14 @@ type GetNextMessageResponse struct {
 
 func getNextMessageEndpoint(user User, afterId int) GetNextMessageResponse {
     // is there already a new message?
-    message, ok := user.getNextMessageAfterId(afterId)
-    if ok {
-        log.Printf("Found existing message: %v\n", message.Id)
-        return GetNextMessageResponse{
-            Success:    true,
-            Message:    message,
+    if afterId > 0 {
+        message, ok := user.getNextMessageAfterId(afterId)
+        if ok {
+            log.Printf("Found existing message: %v\n", message.Id)
+            return GetNextMessageResponse{
+                Success:    true,
+                Message:    message,
+            }
         }
     }
 

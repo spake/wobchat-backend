@@ -250,7 +250,7 @@ Users
 Events
 ------
 
-##`/nextMessage?after={messageID}`
+##`/nextMessage[?after={messageID}]`
 
 ###`GET`
 
@@ -259,6 +259,9 @@ Events
 >If a new message already exists, then it is returned immediately;
 >otherwise, the endpoint waits (for up to 60 seconds) for a message to
 >be received.
+>
+>If no ID is given, the endpoint only waits for a new message to be
+>received.
 >
 ####Response Format:
     {
