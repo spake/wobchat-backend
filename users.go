@@ -166,12 +166,20 @@ func (user *User) getMessagesWithUser(otherUser User) (msgs Messages) {
     return msgs
 }
 
-func (user *User) addMessageToUser(otherUser User, content string, contentType ContentType) (id int, err error) {
+// Gets next message (i.e. with a greater ID than afterId) that the user has received
+func (user *User) getNextMessageAfterId(afterId int) (msg Message, ok bool) {
+    if err := db.Where("recipient_id = ? and id > ?", user.Id, afterId).First(&msg).Error; err == nil {
+        return msg, true
+    }
+    return Message{}, false
+}
+
+func (user *User) addMessageToUser(otherUser User, content string, contentType ContentType) (msg Message, err error) {
     if !contentType.valid() {
-        return 0, errors.New("Invalid content type")
+        return msg, errors.New("Invalid content type")
     }
 
-    msg := Message{
+    msg = Message{
         Content:        content,
         ContentType:    contentType,
         SenderId:       user.Id,
@@ -182,7 +190,7 @@ func (user *User) addMessageToUser(otherUser User, content string, contentType C
 
     db.Create(&msg)
 
-    return msg.Id, nil
+    return msg, nil
 }
 
 /*

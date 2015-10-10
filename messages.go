@@ -187,7 +187,7 @@ func sendMessageEndpoint(user User, friendId int, req SendMessageRequest) SendMe
         }
     }
 
-    msgId, sendErr := user.addMessageToUser(friend, req.Content, req.ContentType)
+    msg, sendErr := user.addMessageToUser(friend, req.Content, req.ContentType)
 
     if sendErr != nil {
         return SendMessageResponse{
@@ -196,8 +196,11 @@ func sendMessageEndpoint(user User, friendId int, req SendMessageRequest) SendMe
         }
     }
 
+    // send event, in case the friend is currently long-polling
+    sendMessageEvent(friend.Id, msg)
+
     return SendMessageResponse{
         Success:    true,
-        Id:         msgId,
+        Id:         msg.Id,
     }
 }

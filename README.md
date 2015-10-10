@@ -246,3 +246,34 @@ Users
       "success": true,
       "error": ""
     }
+
+Events
+------
+
+##`/nextMessage[?after={messageID}]`
+
+###`GET`
+
+>Given the ID of the last message the client has seen (`after`), gets
+>the next message that the client has not yet seen.
+>If a new message already exists, then it is returned immediately;
+>otherwise, the endpoint waits (for up to 60 seconds) for a message to
+>be received.
+>
+>If no ID is given, the endpoint only waits for a new message to be
+>received.
+>
+####Response Format:
+    {
+      "success": true,
+      "error": "",
+      "message": ...
+    }
+
+    OR
+
+    {
+      "success": false,
+      "error": "Timed out",
+      "message": ...
+    }
