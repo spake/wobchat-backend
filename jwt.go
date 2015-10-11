@@ -84,7 +84,14 @@ func verifyIDToken(c context.Context, t string) (GoogleInfo, error) {
     info.FirstName = token.Claims["given_name"].(string)
     info.LastName = token.Claims["family_name"].(string)
     info.Email = token.Claims["email"].(string)
-    info.Picture = token.Claims["picture"].(string)
+    // some users may not have a picture
+    picUrl, ok := token.Claims["picture"].(string)
+    if !ok {
+        info.Picture = ""
+    } else {
+        info.Picture = picUrl
+    }
+
     return info, nil
 }
 
