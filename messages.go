@@ -14,10 +14,12 @@ import (
 type ContentType int
 const (
     ContentTypeText = 1
+    ContentTypeVideo = 2
+    ContentTypeShake = 3
 )
 
 func (ct *ContentType) valid() bool {
-    return ct != nil && *ct >= 1 && *ct <= 1
+    return ct != nil && *ct >= 1 && *ct <= 3
 }
 
 type RecipientType int

@@ -347,10 +347,32 @@ func TestSendMessageEndpoint(t *testing.T) {
         t.Errorf("Response returned the wrong error. Got error %v\n", resp.Error)
     }
 
+    log.Println("Send wib from user1 to user2")
+    req = SendMessageRequest{
+        Content:        "justdoit",
+        ContentType:    ContentTypeVideo,
+    }
+    resp = sendMessageEndpoint(user1, 2, req)
+
+    if !resp.Success {
+        t.Errorf("Response returned failure when it should have succeeded: %v", resp.Error)
+    }
+
+    log.Println("Send wobble from user1 to user2")
+    req = SendMessageRequest{
+        Content:        "",
+        ContentType:    ContentTypeShake,
+    }
+    resp = sendMessageEndpoint(user1, 2, req)
+
+    if !resp.Success {
+        t.Errorf("Response returned failure when it should have succeeded: %v", resp.Error)
+    }
+
     log.Println("Send a message from user1 to user2 with an invalid content type")
     req = SendMessageRequest{
         Content:     "You are a nice person",
-        ContentType: 2,
+        ContentType: 4,
     }
     resp = sendMessageEndpoint(user1, 2, req)
 

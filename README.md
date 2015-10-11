@@ -12,9 +12,11 @@ Enum Values
 ##`ContentType`
 >A field in the Message struct. Defines what type of message the message is.
 >
-| Name            | Value | Description                   |
-| --------------- |:-----:|:----------------------------- |
-| ContentTypeText |   1   | The message is a text message |
+| Name             | Value | Description                                 |
+| ---------------- |:-----:|:------------------------------------------- |
+| ContentTypeText  |   1   | The message is a text message               |
+| ContentTypeVideo |   2   | Predefined video message ('wib')            |
+| ContentTypeText  |   3   | Shake recipient's window message ('wobble') |
 
 ##`RecipientType`
 >A field in the Message struct. Defines what type of entity the message is being sent to.
