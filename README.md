@@ -217,7 +217,7 @@ Users
 
 ###`GET`
 
->Gets a list of all users whose names match the given query.
+>Gets a list of all users (except the current user) whose names match the given query.
 >
 ####Response Format:
     {

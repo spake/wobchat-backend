@@ -238,8 +238,8 @@ func getCurrentUser(r *http.Request) (user User, ok bool) {
     return user, true
 }
 
-func searchUsernames(q string) (users Users) {
-    db.Where("upper(name) LIKE ?", "%%"+strings.ToUpper(q)+"%%").Find(&users)
+func searchUsernames(q string, userid int) (users Users) {
+    db.Where("upper(name) LIKE ? and id != ?", "%%"+strings.ToUpper(q)+"%%", userid).Find(&users)
     return users
 }
 
@@ -470,7 +470,7 @@ func deleteFriendEndpoint(user User, friendId int) DeleteFriendResponse {
 
 func usersHandler(w http.ResponseWriter, r *http.Request) int {
     log.Println("Handling /users")
-    _, ok := getCurrentUser(r)
+    user, ok := getCurrentUser(r)
     if !ok {
         return http.StatusUnauthorized
     }
@@ -481,7 +481,7 @@ func usersHandler(w http.ResponseWriter, r *http.Request) int {
 
     switch r.Method {
     case "GET":
-        resp = listUsersEndpoint(q)
+        resp = listUsersEndpoint(q, user.Id)
     default:
         return http.StatusMethodNotAllowed
     }
@@ -516,16 +516,16 @@ func meHandler(w http.ResponseWriter, r *http.Request) int {
 
 /*
  * GET /users
- * Gets a list of all users whose names match the given query.
+ * Gets a list of all users (except the current user) whose names match the given query.
  */
 type ListUsersResponse struct {
     Success bool            `json:"success"`
     Users []PublicUser      `json:"users"`
 }
 
-func listUsersEndpoint(q string) ListUsersResponse {
+func listUsersEndpoint(q string, userid int) ListUsersResponse {
     var users Users
-    users = searchUsernames(q)
+    users = searchUsernames(q, userid)
 
     resp := ListUsersResponse{
         Success:    true,

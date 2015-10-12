@@ -903,7 +903,7 @@ func TestSearchUsernames(t *testing.T) {
     defer resetTables()
 
     log.Println("Listing all users - there should be none")
-    users := searchUsernames("")
+    users := searchUsernames("", 101)
     if len(users) != 0 {
         t.Errorf("0 users should have been found, found %v\n", len(users))
     }
@@ -920,14 +920,20 @@ func TestSearchUsernames(t *testing.T) {
     log.Println("Creating test user 1")
     db.Create(&user1)
 
-    log.Println("Listing all users")
-    users = searchUsernames("")
+    log.Println("Listing all users as id 421")
+    users = searchUsernames("", 421)
     if len(users) != 1 {
         t.Errorf("1 user should have been found, found %v\n", len(users))
     } else {   
         if users[0].Id != 420 {
             t.Errorf("User had wrong Id. Expected 420, found %v\n", users[0].Id)
         }
+    }
+
+    log.Println("Listing all users as id 420")
+    users = searchUsernames("", 420)
+    if len(users) != 0 {
+        t.Errorf("0 users should have been found, found %v\n", len(users))
     }
 
     user2 := User{
@@ -942,8 +948,8 @@ func TestSearchUsernames(t *testing.T) {
     log.Println("Creating test user 2")
     db.Create(&user2)
 
-    log.Println("Listing all users")
-    users = searchUsernames("")
+    log.Println("Listing all users as id 422")
+    users = searchUsernames("", 422)
     if len(users) != 2 {
         t.Errorf("2 users should have been found, found %v\n", len(users))
     } else {
@@ -955,8 +961,18 @@ func TestSearchUsernames(t *testing.T) {
         }
     }
 
+    log.Println("Listing all users as id 420")
+    users = searchUsernames("", 420)
+    if len(users) != 1 {
+        t.Errorf("1 user should have been found, found %v\n", len(users))
+    } else {
+        if users[0].Id != 421 {
+            t.Errorf("User had wrong Id. Expected 421, found %v\n", users[0].Id)
+        }
+    }
+
     log.Println("Listing users matching 'Peppa Pig'")
-    users = searchUsernames("Peppa Pig")
+    users = searchUsernames("Peppa Pig", 101)
     if len(users) != 1 {
         t.Errorf("1 user should have been found, found %v\n", len(users))
     } else {
@@ -966,7 +982,7 @@ func TestSearchUsernames(t *testing.T) {
     }
 
     log.Println("Listing users matching 'Snoop'")
-    users = searchUsernames("Snoop")
+    users = searchUsernames("Snoop", 101)
     if len(users) != 1 {
         t.Errorf("1 user should have been found, found %v\n", len(users))
     } else {
@@ -975,8 +991,8 @@ func TestSearchUsernames(t *testing.T) {
         }
     }
 
-    log.Println("Listing users matching 'p'")
-    users = searchUsernames("p")
+    log.Println("Listing users matching 'p' as id 101")
+    users = searchUsernames("p", 101)
     if len(users) != 2 {
         t.Errorf("2 users should have been found, found %v\n", len(users))
     } else {
@@ -988,8 +1004,18 @@ func TestSearchUsernames(t *testing.T) {
         }
     }
 
+    log.Println("Listing users matching 'p' as id 420")
+    users = searchUsernames("p", 420)
+    if len(users) != 1{
+        t.Errorf("1 user should have been found, found %v\n", len(users))
+    } else {
+        if users[0].Id != 421 {
+            t.Errorf("User had wrong Id. Expected 421, found %v\n", users[0].Id)
+        }
+    }
+
     log.Println("Listing users matching 'sno'")
-    users = searchUsernames("sno")
+    users = searchUsernames("sno", 101)
     if len(users) != 1 {
         t.Errorf("1 user should have been found, found %v\n", len(users))
     } else {
@@ -999,7 +1025,7 @@ func TestSearchUsernames(t *testing.T) {
     }
 
     log.Println("Listing users matching 'ig'")
-    users = searchUsernames("ig")
+    users = searchUsernames("ig", 101)
     if len(users) != 1 {
         t.Errorf("1 user should have been found, found %v\n", len(users))
     } else {
@@ -1009,7 +1035,7 @@ func TestSearchUsernames(t *testing.T) {
     }
 
     log.Println("Listing users matching 'Snooo'")
-    users = searchUsernames("Snooo")
+    users = searchUsernames("Snooo", 101)
     if len(users) != 0 {
         t.Errorf("0 users should have been found, found %v\n", len(users))
     }
@@ -1043,7 +1069,7 @@ func TestListUsersEndpoint(t *testing.T) {
     db.Create(&user2)
 
     log.Println("Listing users matching 'DOG'")
-    resp := listUsersEndpoint("DOG")
+    resp := listUsersEndpoint("DOG", 421)
 
     if !resp.Success {
         t.Error("Listing users didn't succeed when it should have.")
