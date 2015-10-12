@@ -8,6 +8,7 @@ import (
     "strconv"
     "strings"
     "time"
+    "regexp"
 
     "github.com/gorilla/mux"
 )
@@ -238,8 +239,16 @@ func getCurrentUser(r *http.Request) (user User, ok bool) {
     return user, true
 }
 
+// search for users by name or by email
 func searchUsernames(q string, userid int) (users Users) {
-    db.Where("upper(name) LIKE ? and id != ?", "%%"+strings.ToUpper(q)+"%%", userid).Find(&users)
+    // check if q looks like an email
+    if match, _ := regexp.MatchString(".+@.+\\..+", q); match {
+        // search by email
+        db.Where("upper(email) = ? and id != ?", strings.ToUpper(q), userid).Find(&users)
+    } else {
+        // search by name
+        db.Where("upper(name) LIKE ? and id != ?", "%%"+strings.ToUpper(q)+"%%", userid).Find(&users)
+    }
     return users
 }
 

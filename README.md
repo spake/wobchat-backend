@@ -218,6 +218,7 @@ Users
 ###`GET`
 
 >Gets a list of all users (except the current user) whose names match the given query.
+>If partialname looks like an email, it will search on exact match of emails instead
 >
 ####Response Format:
     {
