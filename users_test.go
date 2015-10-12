@@ -1039,6 +1039,70 @@ func TestSearchUsernames(t *testing.T) {
     if len(users) != 0 {
         t.Errorf("0 users should have been found, found %v\n", len(users))
     }
+
+    log.Println("Listing users matching 'higher@gmail.com'")
+    users = searchUsernames("higher@gmail.com", 101)
+    if len(users) != 1 {
+        t.Errorf("1 user should have been found, found %v\n", len(users))
+    } else {
+        if users[0].Id != 420 {
+            t.Errorf("User had wrong Id. Expected 420, found %v\n", users[0].Id)
+        }
+    }
+
+    log.Println("Listing users matching 'hIGHer@gmAIl.com'")
+    users = searchUsernames("hIGHer@gmAIl.com", 101)
+    if len(users) != 1 {
+        t.Errorf("1 user should have been found, found %v\n", len(users))
+    } else {
+        if users[0].Id != 420 {
+            t.Errorf("User had wrong Id. Expected 420, found %v\n", users[0].Id)
+        }
+    }
+
+    log.Println("Listing users matching 'p.pig@gmail.com'")
+    users = searchUsernames("p.pig@gmail.com", 101)
+    if len(users) != 1 {
+        t.Errorf("1 user should have been found, found %v\n", len(users))
+    } else {
+        if users[0].Id != 421 {
+            t.Errorf("User had wrong Id. Expected 421, found %v\n", users[0].Id)
+        }
+    }
+
+    log.Println("Listing users matching 'p.pig@gmail.com' as user 420")
+    users = searchUsernames("p.pig@gmail.com", 420)
+    if len(users) != 1 {
+        t.Errorf("1 user should have been found, found %v\n", len(users))
+    } else {
+        if users[0].Id != 421 {
+            t.Errorf("User had wrong Id. Expected 421, found %v\n", users[0].Id)
+        }
+    }
+
+    log.Println("Listing users matching 'p.pig@gmail.com' as user 421")
+    users = searchUsernames("p.pig@gmail.com", 421)
+    if len(users) != 0 {
+        t.Errorf("0 users should have been found, found %v\n", len(users))
+    }
+
+    log.Println("Listing users matching 'p.pig@gmail.co'")
+    users = searchUsernames("p.pig@gmail.co", 101)
+    if len(users) != 0 {
+        t.Errorf("0 users should have been found, found %v\n", len(users))
+    }
+
+    log.Println("Listing users matching 'p.pig@gmail.com.'")
+    users = searchUsernames("p.pig@gmail.com.", 101)
+    if len(users) != 0 {
+        t.Errorf("0 users should have been found, found %v\n", len(users))
+    }
+
+    log.Println("Listing users matching 'a@b.c")
+    users = searchUsernames("a@b.c", 101)
+    if len(users) != 0 {
+        t.Errorf("0 users should have been found, found %v\n", len(users))
+    }
 }
 
 func TestListUsersEndpoint(t *testing.T) {
