@@ -162,8 +162,20 @@ func (users *Users) toPublic() (publicUsers []PublicUser) {
     return
 }
 
-func (user *User) getMessagesWithUser(otherUser User) (msgs Messages) {
-    db.Where("(sender_id = ? and recipient_id = ?) or (sender_id = ? and recipient_id = ?)", user.Id, otherUser.Id, otherUser.Id, user.Id).Find(&msgs)
+func (m Messages) reverse() {
+    for i := 0; i < len(m)/2; i++ {
+        m[i], m[len(m)-i-1] = m[len(m)-i-1], m[i]
+    }
+}
+
+func (user *User) getMessagesWithUser(otherUser User, last int, amount int) (msgs Messages) {
+    if last == -1 {
+        db.Where("((sender_id = ? and recipient_id = ?) or (sender_id = ? and recipient_id = ?))", user.Id, otherUser.Id, otherUser.Id, user.Id).Order("id desc").Limit(amount).Find(&msgs)
+    } else {
+        db.Where("((sender_id = ? and recipient_id = ?) or (sender_id = ? and recipient_id = ?)) and id < ?", user.Id, otherUser.Id, otherUser.Id, user.Id, last).Order("id desc").Limit(amount).Find(&msgs)
+    }
+    msgs.reverse()
+    
     return msgs
 }
 
@@ -486,10 +498,9 @@ func usersHandler(w http.ResponseWriter, r *http.Request) int {
 
     var resp interface{}
 
-    q := r.FormValue("q")
-
     switch r.Method {
     case "GET":
+        q := r.FormValue("q")
         resp = listUsersEndpoint(q, user.Id)
     default:
         return http.StatusMethodNotAllowed
