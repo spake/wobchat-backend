@@ -33,7 +33,7 @@ func TestGetSender(t *testing.T) {
     user1.addMessageToUser(user2, "this is a message from user1 to user2", 1)
     
     log.Println("Get messages between user1 and user2")
-    messages := user1.getMessagesWithUser(user2)
+    messages := user1.getMessagesWithUser(user2, -1, 100)
 
     log.Println("Check sender")
     if sender, _ := messages[0].getSender(); sender.Id != user1.Id {
@@ -69,7 +69,7 @@ func TestGetRecipientUser(t *testing.T) {
     user1.addMessageToUser(user2, "this is a message from user1 to user2", 1)
     
     log.Println("Get messages between user1 and user2")
-    messages := user1.getMessagesWithUser(user2)
+    messages := user1.getMessagesWithUser(user2, -1, 100)
 
     log.Println("Check recipient")
     if recipient, _ := messages[0].getRecipientUser(); recipient.Id != user2.Id {
@@ -114,13 +114,13 @@ func TestListMessagesEndpoint(t *testing.T) {
     db.Create(&user3)
 
     log.Println("List the messages between user2 and user1 (not friends)")
-    response := listMessagesEndpoint(user2, 1)
+    response := listMessagesEndpoint(user2, 1, -1, 100)
     if response.Error == "" {
         t.Error("Listing messages should fail when users aren't friends")
     }
 
     log.Println("List the messages between user1 and user1 (same user)")
-    response = listMessagesEndpoint(user2, 2)
+    response = listMessagesEndpoint(user2, 2, -1, 100)
     if response.Error == "" {
         t.Error("Listing messages should fail when users are the same")
     }
@@ -134,7 +134,7 @@ func TestListMessagesEndpoint(t *testing.T) {
     user1.addMessageToUser(user2, "this is a message from user1 to user2", 1)
 
     log.Println("List the messages between user2 and user1")
-    response = listMessagesEndpoint(user2, 1)
+    response = listMessagesEndpoint(user2, 1, -1, 100)
 
     if response.Error != "" {
         t.Error("Response had error when it shouldn't have")
@@ -155,7 +155,7 @@ func TestListMessagesEndpoint(t *testing.T) {
     }
 
     log.Println("List the messages between user1 and user2")
-    response = listMessagesEndpoint(user1, 2)
+    response = listMessagesEndpoint(user1, 2, -1, 100)
 
     if response.Error != "" {
         t.Error("Response had error when it shouldn't have")
@@ -179,7 +179,7 @@ func TestListMessagesEndpoint(t *testing.T) {
     user2.addMessageToUser(user3, "this is a message from user2 to user3", 1)
 
     log.Println("List the messages between user3 and user2")
-    response = listMessagesEndpoint(user3, 2)
+    response = listMessagesEndpoint(user3, 2, -1, 100)
 
     if response.Error != "" {
         t.Error("Response had error when it shouldn't have")
@@ -203,7 +203,7 @@ func TestListMessagesEndpoint(t *testing.T) {
     user1.addMessageToUser(user2, "this is another message from user1 to user2", 1)
 
     log.Println("List the messages between user2 and user1")
-    response = listMessagesEndpoint(user2, 1)
+    response = listMessagesEndpoint(user2, 1, -1, 100)
 
     if response.Error != "" {
         t.Error("Response had error when it shouldn't have")
@@ -224,14 +224,14 @@ func TestListMessagesEndpoint(t *testing.T) {
     user1.addMessageToUser(user2, "this is a message from user2 to user1", 1)
 
     log.Println("List the messages between user1 and user2")
-    response = listMessagesEndpoint(user1, 2)
+    response = listMessagesEndpoint(user1, 2, -1, 100)
 
     if response.Error != "" {
         t.Error("Response had error when it shouldn't have")
     }
 
     if len(response.Messages) != 3 {
-        t.Errorf("1 message expected, found %v\n", len(response.Messages))
+        t.Errorf("3 message expected, found %v\n", len(response.Messages))
     } else {
         if response.Messages[0].Content != "this is a message from user1 to user2" {
             t.Errorf("Message returned had the wrong content: %v\n", response.Messages[0].Content)
@@ -244,8 +244,23 @@ func TestListMessagesEndpoint(t *testing.T) {
         }
     }
 
+    log.Println("List the last message between user1 and user2")
+    response = listMessagesEndpoint(user1, 2, -1, 1)
+
+    if response.Error != "" {
+        t.Error("Response had error when it shouldn't have")
+    }
+
+    if len(response.Messages) != 1 {
+        t.Errorf("1 message expected, found %v\n", len(response.Messages))
+    } else {
+        if response.Messages[0].Content != "this is a message from user2 to user1" {
+            t.Errorf("Message returned had the wrong content: %v\n", response.Messages[0].Content)
+        }
+    }
+
     log.Println("List the messages between user1 and a non existent user")
-    response = listMessagesEndpoint(user1, 123)
+    response = listMessagesEndpoint(user1, 123, -1, 100)
     if response.Error != "Friend not found" {
         t.Errorf("Response returned the wrong error. Got error %v\n", response.Error)
     }
@@ -316,7 +331,7 @@ func TestSendMessageEndpoint(t *testing.T) {
         t.Error("Response returned an error when it shouldn't have")
     }
 
-    messages := user1.getMessagesWithUser(user2)
+    messages := user1.getMessagesWithUser(user2, -1, 100)
 
     if len(messages) != 1 {
         t.Errorf("1 message expected, found %v\n", len(messages))

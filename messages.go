@@ -83,7 +83,30 @@ func messagesHandler(w http.ResponseWriter, r *http.Request) int {
 
     switch r.Method {
     case "GET":
-        resp = listMessagesEndpoint(user, friendId)
+        var last, amount int;
+        var err error;
+
+        if last_param := r.FormValue("last"); last_param != ""{
+            last, err = strconv.Atoi(last_param)
+            if err != nil || last < 0 {
+                log.Println("Last not positive integer")
+                return http.StatusBadRequest
+            }
+        } else {
+            last = -1;
+        }
+
+        if amount_param := r.FormValue("amount"); amount_param != ""{
+            amount, err = strconv.Atoi(amount_param)
+            if err != nil || amount <= 0 {
+                log.Println("Amount not positive integer")
+                return http.StatusBadRequest
+            }
+        } else {
+            // default to 100
+            amount = 100;
+        }
+        resp = listMessagesEndpoint(user, friendId, last, amount)
     case "POST":
         decoder := json.NewDecoder(r.Body)
         var req SendMessageRequest
@@ -105,6 +128,8 @@ func messagesHandler(w http.ResponseWriter, r *http.Request) int {
  * GET /friends/{friendId}/messages
  * Gets a list of the messages between the current user and their friend specified
  * by the Id.
+ * last specifies the messageId of the message that would come right after the last returned message.
+ * amount specifies the number of messages returned.
  */
 type ListMessagesResponse struct {
     Success     bool        `json:"success"`
@@ -112,7 +137,7 @@ type ListMessagesResponse struct {
     Messages    Messages    `json:"messages"`
 }
 
-func listMessagesEndpoint(user User, friendId int) ListMessagesResponse {
+func listMessagesEndpoint(user User, friendId int, last int, amount int) ListMessagesResponse {
     if friendId == user.Id {
         return ListMessagesResponse{
             Success:    false,
@@ -139,7 +164,7 @@ func listMessagesEndpoint(user User, friendId int) ListMessagesResponse {
     }
 
     var messages Messages
-    messages = user.getMessagesWithUser(friend)
+    messages = user.getMessagesWithUser(friend, last, amount)
 
     return ListMessagesResponse{
         Success:    true,

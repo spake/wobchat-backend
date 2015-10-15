@@ -1,6 +1,7 @@
 package main
 
 import (
+    "fmt"
     "testing"
     "log"
 )
@@ -822,8 +823,8 @@ func TestAddAndGetMessagesWithUser(t *testing.T) {
     db.Create(&user2)
 
     log.Println("Getting messages (should be none)")
-    messages1 := user1.getMessagesWithUser(user2)
-    messages2 := user2.getMessagesWithUser(user1)
+    messages1 := user1.getMessagesWithUser(user2, -1, 100)
+    messages2 := user2.getMessagesWithUser(user1, -1, 100)
     if len(messages1) != 0 {
         t.Errorf("Should have found 0 messages, found %v\n", len(messages1))
     }
@@ -841,8 +842,8 @@ func TestAddAndGetMessagesWithUser(t *testing.T) {
         t.Errorf("Shouldn't have failed on empty message")
     }
 
-    messages1 = user1.getMessagesWithUser(user2)
-    messages2 = user2.getMessagesWithUser(user1)
+    messages1 = user1.getMessagesWithUser(user2, -1, 100)
+    messages2 = user2.getMessagesWithUser(user1, -1, 100)
     if len(messages1) != 1 {
         t.Errorf("Should have found 1 message, found %v\n", len(messages1))
     }
@@ -861,8 +862,8 @@ func TestAddAndGetMessagesWithUser(t *testing.T) {
         t.Errorf("Shouldn't have failed on normal message")
     }
 
-    messages1 = user1.getMessagesWithUser(user2)
-    messages2 = user2.getMessagesWithUser(user1)
+    messages1 = user1.getMessagesWithUser(user2, -1, 100)
+    messages2 = user2.getMessagesWithUser(user1, -1, 100)
     if len(messages1) != 3 {
         t.Errorf("Should have found 3 messages, found %v\n", len(messages1))
     }
@@ -895,8 +896,164 @@ func TestAddAndGetMessagesWithUser(t *testing.T) {
     if recipient, err := messages1[0].getRecipientUser(); err != nil || recipient.Id != messages1[0].RecipientId {
         t.Errorf("Invalid recipient ID")
     }
+}
 
-    // TODO: test ID returned by addMessageToUser when we have a function to get message by ID
+func TestGetMessagesWithUserWithLastAndAmount(t *testing.T) {
+    defer resetTables()
+
+    user1 := User{
+        Id:        420,
+        Uid:       "420",
+        Name:      "Snoop Doge",
+        FirstName: "Snoop",
+        LastName:  "Doge",
+        Email:     "higher@gmail.com",
+        Picture:   "42keks"}
+
+    log.Println("Creating test user 1")
+    db.Create(&user1)
+
+    user2 := User{
+        Id:        421,
+        Uid:       "421",
+        Name:      "Peppa Pig",
+        FirstName: "Peppa",
+        LastName:  "Pig",
+        Email:     "p.pig@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 2")
+    db.Create(&user2)
+
+    user3 := User{
+        Id:        422,
+        Uid:       "422",
+        Name:      "Brad Heap",
+        FirstName: "Brad",
+        LastName:  "Heap",
+        Email:     "kiwisarecool@gmail.com",
+        Picture:   "someurl"}
+
+    log.Println("Creating test user 3")
+    db.Create(&user3)
+
+    log.Println("Adding 100 messages from user1 to user2")
+    for i := 0; i < 100; i++ {
+        user2.addMessageToUser(user1, fmt.Sprintf("Hello user2 from user1 %v", i), ContentTypeText)
+    }
+
+    log.Println("Adding 5 messages from user1 to user3")
+    for i := 0; i < 5; i++ {
+        user3.addMessageToUser(user1, fmt.Sprintf("Hello user3 from user1 %v", i), ContentTypeText)
+    }
+
+    log.Println("Adding 100 messages from user2 to user1")
+    for i := 0; i < 100; i++ {
+        user1.addMessageToUser(user2, fmt.Sprintf("Hello user1 from user2 %v", i), ContentTypeText)
+    }
+
+    log.Println("Getting last 100 messages between user2 and user1")
+    messages := user1.getMessagesWithUser(user2, -1, 100)
+    if len(messages) != 100 {
+        t.Errorf("Should have returned only 100 messages, returned %v\n", len(messages))
+    } else {
+        for i := 0; i < 100; i++ {
+            if messages[i].Content != fmt.Sprintf("Hello user1 from user2 %v", i) {
+                t.Errorf("%vth message wrong", i)
+            }
+        }
+    }
+
+    log.Println("Getting last 100 messages between user1 and user2")
+    messages = user2.getMessagesWithUser(user1, -1, 100)
+    if len(messages) != 100 {
+        t.Errorf("Should have returned only 100 messages, returned %v\n", len(messages))
+    } else {
+        for i := 0; i < 100; i++ {
+            if messages[i].Content != fmt.Sprintf("Hello user1 from user2 %v", i) {
+                t.Errorf("%vth message wrong", i)
+            }
+        }
+    }
+
+    last_message_id := messages[0].Id
+
+    log.Println("Getting first 100 messages between user1 and user2")
+    messages = user2.getMessagesWithUser(user1, last_message_id, 100)
+    if len(messages) != 100 {
+        t.Errorf("Should have returned only 100 messages, returned %v\n", len(messages))
+    } else {
+        for i := 0; i < 100; i++ {
+            if messages[i].Content != fmt.Sprintf("Hello user2 from user1 %v", i) {
+                t.Errorf("%vth message wrong", i)
+            }
+        }
+    }
+
+    log.Println("Getting first 10 messages between user1 and user2")
+    messages = user2.getMessagesWithUser(user1, -1, 10)
+    if len(messages) != 10 {
+        t.Errorf("Should have returned only 10 messages, returned %v\n", len(messages))
+    } else {
+        for i := 0; i < 10; i++ {
+            if messages[i].Content != fmt.Sprintf("Hello user1 from user2 %v", i+90) {
+                t.Errorf("%vth message wrong", i)
+            }
+        }
+    }
+
+    last_message_id = messages[0].Id
+
+    log.Println("Getting next 10 messages between user1 and user2")
+    messages = user2.getMessagesWithUser(user1, last_message_id, 10)
+    if len(messages) != 10 {
+        t.Errorf("Should have returned only 10 messages, returned %v\n", len(messages))
+    } else {
+        for i := 0; i < 10; i++ {
+            if messages[i].Content != fmt.Sprintf("Hello user1 from user2 %v", i+80) {
+                t.Errorf("%vth message wrong", i)
+            }
+        }
+    }
+
+    log.Println("Getting first 10 messages between user1 and user3 but only 5 exist")
+    messages = user3.getMessagesWithUser(user1, -1, 10)
+    if len(messages) != 5 {
+        t.Errorf("Should have returned only 5 messages, returned %v\n", len(messages))
+    } else {
+        for i := 0; i < 5; i++ {
+            if messages[i].Content != fmt.Sprintf("Hello user3 from user1 %v", i) {
+                t.Errorf("%vth message wrong", i)
+            }
+        }
+    }
+
+    third_message_id := messages[2].Id
+
+    log.Println("Getting 10 messages before the third message between user1 and user3")
+    messages = user3.getMessagesWithUser(user1, third_message_id, 10)
+    if len(messages) != 2 {
+        t.Errorf("Should have returned only 2 messages, returned %v\n", len(messages))
+    } else {
+        for i := 0; i < 2; i++ {
+            if messages[i].Content != fmt.Sprintf("Hello user3 from user1 %v", i) {
+                t.Errorf("%vth message wrong", i)
+            }
+        }
+    }
+
+    first_message_id := messages[0].Id
+    log.Println("Getting 10 messages before the first message between user1 and user3")
+    messages = user3.getMessagesWithUser(user1, first_message_id, 10)
+    if len(messages) != 0 {
+        t.Errorf("Should have returned no messages, returned %v\n", len(messages))
+    }
+
+    log.Println("Getting 1 message before the first message between user1 and user3")
+    messages = user3.getMessagesWithUser(user1, first_message_id, 1)
+    if len(messages) != 0 {
+        t.Errorf("Should have returned no messages, returned %v\n", len(messages))
+    }
 }
 
 func TestSearchUsernames(t *testing.T) {

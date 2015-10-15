@@ -106,11 +106,13 @@ Friends
       "error": ""
     }
 
-##`/friends/{friendId}/messages`
+##`/friends/{friendId}/messages[?last={messageId}&amount={amount}]`
 
 ###`GET`
 
 >Gets a list of the messages between the current user and their friend specified by the Id.
+>`last` specifies the messageId of the message that would come right after the last returned message.
+>`amount` specifies the number of messages returned.
 >
 ####Response Format:
     {
@@ -213,7 +215,7 @@ Users
     }
 
 
-##`/users[?q=partialname]`
+##`/users[?q={partialname}]`
 
 ###`GET`
 
@@ -253,7 +255,7 @@ Users
 Events
 ------
 
-##`/nextMessage[?after={messageID}]`
+##`/nextMessage[?after={messageId}]`
 
 ###`GET`
 
