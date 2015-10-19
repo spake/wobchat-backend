@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "testing"
+    "time"
     "log"
 )
 
@@ -226,10 +227,10 @@ func TestAddingFriends(t *testing.T) {
     if len(friends) != 2 {
         t.Errorf("2 friends should have been found, found %v\n", len(friends))
     }
-    if friends[0] != testUser2 {
+    if friends[1] != testUser2 {
         t.Errorf("test user 2 not found in friends")
     }
-    if friends[1] != testUser3 {
+    if friends[0] != testUser3 {
         t.Errorf("test user 3 not found in friends")
     }
     log.Println("Get friends of user 2")
@@ -257,10 +258,10 @@ func TestAddingFriends(t *testing.T) {
     if len(friends) != 2 {
         t.Errorf("2 friends should have been found, found %v\n", len(friends))
     }
-    if friends[0] != testUser2 {
+    if friends[1] != testUser2 {
         t.Errorf("test user 2 not found in friends")
     }
-    if friends[1] != testUser3 {
+    if friends[0] != testUser3 {
         t.Errorf("test user 3 not found in friends")
     }
     log.Println("Get friends of user 2")
@@ -1789,5 +1790,191 @@ func TestGetNextMessageEndpoint(t *testing.T) {
     }
     if msg, ok := user2.getNextMessageAfterId(msg3.Id); ok {
         t.Errorf("Message found when there shouldn't have been one. Found %v/%v\n", ok, msg.Id)
+    }
+}
+
+func TestTimeOfLastMessage(t *testing.T) {
+    defer resetTables()
+    user1 := User{
+        Id:         1,
+        Uid:        "1",
+        Name:       "Tony Abbott",
+        FirstName:  "Tony",
+        LastName:   "Abbott",
+        Email:      "xXx_0n10n_fan_xXx@hotmail.com",
+        Picture:    "tone.jpg",
+    }
+    db.Create(&user1)
+
+    user2 := User{
+        Id:         2,
+        Uid:        "2",
+        Name:       "Malcolm Turnbull",
+        FirstName:  "Malcolm",
+        LastName:   "Turnbull",
+        Email:      "pm@gmail.com",
+        Picture:    "hehe",
+    }
+    db.Create(&user2)
+
+    defaultTimestamp := time.Time{}
+
+    log.Println("Testing time of last message with no messages")
+    if ts := user1.timeOfLastMessageWithUser(user2); !ts.Equal(defaultTimestamp) {
+        t.Errorf("Time of last message was not correct: expected %v, got %v", defaultTimestamp, ts)
+    }
+    if ts := user2.timeOfLastMessageWithUser(user1); !ts.Equal(defaultTimestamp) {
+        t.Errorf("Time of last message was not correct: expected %v, got %v", defaultTimestamp, ts)
+    }
+
+    log.Println("Adding a message")
+    msg1, _ := user1.addMessageToUser(user2, "malcom pls", ContentTypeText)
+    timestamp1 := msg1.Timestamp.Round(time.Millisecond)
+
+    log.Println("Testing time of last message after adding 1 message")
+    if ts := user1.timeOfLastMessageWithUser(user2).Round(time.Millisecond); !ts.Equal(timestamp1) {
+        t.Errorf("Time of last message was not correct: expected %v, got %v", timestamp1, ts)
+    }
+    if ts := user2.timeOfLastMessageWithUser(user1).Round(time.Millisecond); !ts.Equal(timestamp1) {
+        t.Errorf("Time of last message was not correct: expected %v, got %v", timestamp1, ts)
+    }
+
+    time.Sleep(10 * time.Millisecond)
+
+    log.Println("Adding another message")
+    msg2, _ := user2.addMessageToUser(user1, "lel", ContentTypeText)
+    timestamp2 := msg2.Timestamp.Round(time.Millisecond)
+
+    log.Println("Testing time of last message after adding 2 messages")
+    if ts := user1.timeOfLastMessageWithUser(user2).Round(time.Millisecond); !ts.Equal(timestamp2) {
+        t.Errorf("Time of last message was not correct: expected %v, got %v", timestamp2, ts)
+    }
+    if ts := user2.timeOfLastMessageWithUser(user1).Round(time.Millisecond); !ts.Equal(timestamp2) {
+        t.Errorf("Time of last message was not correct: expected %v, got %v", timestamp2, ts)
+    }
+}
+
+func TestGetFriendsSorting(t *testing.T) {
+    defer resetTables()
+    user1 := User{
+        Id:         1,
+        Uid:        "1",
+        Name:       "Tony Abbott",
+        FirstName:  "Tony",
+        LastName:   "Abbott",
+        Email:      "xXx_0n10n_fan_xXx@hotmail.com",
+        Picture:    "tone.jpg",
+    }
+    db.Create(&user1)
+
+    user2 := User{
+        Id:         2,
+        Uid:        "2",
+        Name:       "Malcolm Turnbull",
+        FirstName:  "Malcolm",
+        LastName:   "Turnbull",
+        Email:      "pm@gmail.com",
+        Picture:    "hehe",
+    }
+    db.Create(&user2)
+
+    user3 := User{
+        Id:        3,
+        Uid:       "3",
+        Name:      "Bill Shorten",
+        FirstName: "Bill",
+        LastName:  "Shorten",
+        Email:     "billyboy@gmail.com",
+        Picture:   "someurl",
+    }
+    db.Create(&user3)
+
+    user4 := User{
+        Id:         4,
+        Uid:        "4",
+        Name:       "Clive Palmer",
+        FirstName:  "Clive",
+        LastName:   "Palmer",
+        Email:      "mining_is_gr8@gmail.com",
+        Picture:    "coal.jpg",
+    }
+    db.Create(&user4)
+
+    log.Println("Adding friends")
+    user1.addFriend(user2)
+    user1.addFriend(user3) // yeah right
+    user1.addFriend(user4)
+
+    log.Println("Testing ordering with no messages")
+    friends := user1.getFriends()
+    // should be alphabetical: bill (3), clive (4), malcolm (2)
+    if friends[0].Id != user3.Id {
+        t.Errorf("Friends weren't in alphabetical order: expected %v, got %v", user3.FirstName, friends[0].FirstName)
+    }
+    if friends[1].Id != user4.Id {
+        t.Errorf("Friends weren't in alphabetical order: expected %v, got %v", user4.FirstName, friends[1].FirstName)
+    }
+    if friends[2].Id != user2.Id {
+        t.Errorf("Friends weren't in alphabetical order: expected %v, got %v", user2.FirstName, friends[2].FirstName)
+    }
+
+    // send message from tony to malcolm
+    user1.addMessageToUser(user2, "we're friends...right?", ContentTypeText)
+    log.Println("Testing ordering with message to 1 friend")
+    friends = user1.getFriends()
+    // should be: malcolm (2), bill(3), clive(4)
+    if friends[0].Id != user2.Id {
+        t.Errorf("Friends weren't in order: expected %v, got %v", user2.FirstName, friends[0].FirstName)
+    }
+    if friends[1].Id != user3.Id {
+        t.Errorf("Friends weren't in order: expected %v, got %v", user3.FirstName, friends[1].FirstName)
+    }
+    if friends[2].Id != user4.Id {
+        t.Errorf("Friends weren't in order: expected %v, got %v", user4.FirstName, friends[2].FirstName)
+    }
+
+    // send message from clive to tony
+    user4.addMessageToUser(user1, "bye bye tony, bye bye", ContentTypeText)
+    log.Println("Testing ordering with message to 2 friends")
+    friends = user1.getFriends()
+    // should be: clive(4), malcolm(2), bill(3)
+    if friends[0].Id != user4.Id {
+        t.Errorf("Friends weren't in order: expected %v, got %v", user4.FirstName, friends[0].FirstName)
+    }
+    if friends[1].Id != user2.Id {
+        t.Errorf("Friends weren't in order: expected %v, got %v", user2.FirstName, friends[1].FirstName)
+    }
+    if friends[2].Id != user3.Id {
+        t.Errorf("Friends weren't in order: expected %v, got %v", user3.FirstName, friends[2].FirstName)
+    }
+
+    // send message from bill to malcolm (shouldn't affect ordering)
+    user3.addMessageToUser(user2, "fuk", ContentTypeText)
+    log.Println("Testing ordering with message to 2 friends, with 1 irrelevant message")
+    friends = user1.getFriends()
+    // should be: clive(4), malcolm(2), bill(3)
+    if friends[0].Id != user4.Id {
+        t.Errorf("Friends weren't in order: expected %v, got %v", user4.FirstName, friends[0].FirstName)
+    }
+    if friends[1].Id != user2.Id {
+        t.Errorf("Friends weren't in order: expected %v, got %v", user2.FirstName, friends[1].FirstName)
+    }
+    if friends[2].Id != user3.Id {
+        t.Errorf("Friends weren't in order: expected %v, got %v", user3.FirstName, friends[2].FirstName)
+    }
+
+    // send message from bill to tony (should affect ordering)
+    user3.addMessageToUser(user1, "rip", ContentTypeText)
+    log.Println("Testing ordering with message to 3 friends, with 1 irrelevant message")
+    friends = user1.getFriends()
+    // should be: bill(3), clive(4), malcolm(2)
+    if friends[0].Id != user3.Id {
+        t.Errorf("Friends weren't in order: expected %v, got %v", user3.FirstName, friends[0].FirstName)
+    }
+    if friends[1].Id != user4.Id {
+        t.Errorf("Friends weren't in order: expected %v, got %v", user4.FirstName, friends[1].FirstName)
+    }
+    if friends[2].Id != user2.Id {
+        t.Errorf("Friends weren't in order: expected %v, got %v", user2.FirstName, friends[2].FirstName)
     }
 }

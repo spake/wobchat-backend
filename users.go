@@ -5,6 +5,7 @@ import (
     "errors"
     "log"
     "net/http"
+    "sort"
     "strconv"
     "strings"
     "time"
@@ -53,10 +54,46 @@ type PublicUser struct {
     Picture     string  `json:"picture"`
 }
 
+// types, just for getFriends sorting (go pls ;_;)
+type Friends struct {
+    User    User
+    Friend  User
+}
+type FriendsByTime []Friends
+func (a FriendsByTime) Len() int {
+    return len(a)
+}
+func (a FriendsByTime) Swap(i, j int) {
+    a[i], a[j] = a[j], a[i]
+}
+func (a FriendsByTime) Less(i, j int) bool {
+    // sort by time; if they're equal, then by display name, alphabetical
+    ts_i := a[i].User.timeOfLastMessageWithUser(a[i].Friend)
+    ts_j := a[j].User.timeOfLastMessageWithUser(a[j].Friend)
+    if ts_i.Equal(ts_j) {
+        return a[i].Friend.Name < a[j].Friend.Name
+    }
+    return ts_j.Before(ts_i)
+}
+
+// gets list of user's friends, sorted by time of last message sent/received
 func (user *User) getFriends() Users {
     friends := []User{}
     db.Joins("inner join user_friends on friend_id = id").Where(&UserFriend{UserId: user.Id}).Find(&friends)
-    return friends
+
+    // sort
+    var friendsByTime FriendsByTime
+    for _, friend := range friends {
+        friendsByTime = append(friendsByTime, Friends{User: *user, Friend: friend})
+    }
+    sort.Sort(friendsByTime)
+
+    sortedFriends := []User{}
+    for _, friendByTime := range friendsByTime {
+        sortedFriends = append(sortedFriends, friendByTime.Friend)
+    }
+
+    return sortedFriends
 }
 
 func (user *User) addFriend(friend User) error {
@@ -166,6 +203,14 @@ func (m Messages) reverse() {
     for i := 0; i < len(m)/2; i++ {
         m[i], m[len(m)-i-1] = m[len(m)-i-1], m[i]
     }
+}
+
+func (user *User) timeOfLastMessageWithUser(otherUser User) (ts time.Time) {
+    msgs := user.getMessagesWithUser(otherUser, -1, 1)
+    if len(msgs) > 0 {
+        ts = msgs[0].Timestamp
+    }
+    return ts
 }
 
 func (user *User) getMessagesWithUser(otherUser User, last int, amount int) (msgs Messages) {
