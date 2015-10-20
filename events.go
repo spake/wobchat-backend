@@ -8,7 +8,7 @@ import (
     "time"
 )
 
-const MessageEventTimeout = 60
+const MessageEventTimeout = 10
 
 type MessageEventListener struct {
     Lock        sync.Mutex
