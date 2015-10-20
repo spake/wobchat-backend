@@ -1,7 +1,6 @@
 package main
 
 import (
-    "encoding/json"
     "errors"
     "log"
     "net/http"
@@ -329,18 +328,6 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) int {
     switch r.Method {
     case "GET":
         resp = listFriendsEndpoint(user)
-    case "POST":
-        decoder := json.NewDecoder(r.Body)
-        var req AddFriendRequest
-        err := decoder.Decode(&req)
-        if err != nil {
-            return http.StatusBadRequest
-        }
-        if req.Id <= 0 {
-            log.Println("Friend ID not positive integer")
-            return http.StatusBadRequest
-        }
-        resp = addFriendEndpoint(user, req)
     default:
         return http.StatusMethodNotAllowed
     }
@@ -368,44 +355,6 @@ func listFriendsEndpoint(user User) ListFriendsResponse {
     }
 
     return resp
-}
-
-/*
- * POST /friends
- * Adds a user as a friend of the current user.
- */
-type AddFriendRequest struct {
-    Id  int `json:"id"`
-}
-
-type AddFriendResponse struct {
-    Success bool        `json:"success"`
-    Error   string      `json:"error"`
-    Friend  PublicUser  `json:"friend"`
-}
-
-func addFriendEndpoint(user User, req AddFriendRequest) AddFriendResponse {
-    var friend User
-    dbErr := db.Where(&User{Id: req.Id}).First(&friend).Error
-
-    if dbErr != nil {
-        // friend they are trying to add not found
-        return AddFriendResponse{
-                Success: false,
-                Error:   "Friend not found"}
-    }
-    
-    addErr := user.addFriend(friend)
-
-    if addErr != nil {
-        return AddFriendResponse{
-            Success: false,
-            Error:   addErr.Error()}
-    }
-
-    return AddFriendResponse{
-        Success: true,
-        Friend: friend.toPublic()}
 }
 
 /*
